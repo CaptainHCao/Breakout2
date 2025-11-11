@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Breakout (LLDB)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/build/macos-debug/Breakout/Breakout",
+      "cwd": "${workspaceFolder}"          // <-- so "assets/..." resolves
+    }
+  ]
+}
