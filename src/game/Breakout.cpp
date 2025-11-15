@@ -1,12 +1,13 @@
 ﻿// Breakout.cpp : Defines the entry point for the application.
 //
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include "Breakout.h"
+#include "Menu.h"
 #include <SDL3_image/SDL_image.h>
 
-using namespace std;
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
 
 struct SDL_State
 {
@@ -31,7 +32,31 @@ void Breakout::run()
 		return;
 	}
 
-	// Asset loading
+	// ImGui init
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	(void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL3_InitForSDLRenderer(state.window, state.renderer);
+	ImGui_ImplSDLRenderer3_Init(state.renderer);
+
+	// --- Game / menu state ---
+	enum class GameState
+	{
+		Menu,
+		Playing
+	};
+
+	GameState gameState = GameState::Menu;
+
+	bool soundOn = true;
+	bool musicOn = true;
+	int highscore = 0;
+
+	Menu menu; // defined in Menu.h / Menu.cpp
+
+	// Asset loading for gameplay
 	SDL_Texture *paddleTexture = IMG_LoadTexture(state.renderer, "assets/textures/paddle.png");
 
 	if (!paddleTexture)
@@ -40,104 +65,194 @@ void Breakout::run()
 		return;
 	}
 
+	SDL_Texture *bgTexture = IMG_LoadTexture(state.renderer, "assets/textures/dragon.png");
+
+	SDL_SetTextureScaleMode(bgTexture, SDL_SCALEMODE_NEAREST);
+
 	SDL_SetTextureScaleMode(paddleTexture, SDL_SCALEMODE_NEAREST);
-	const float spriteSize = 32;
+	const float spriteSize = 32.0f;
 
 	// Inputs
 	const bool *keys = SDL_GetKeyboardState(nullptr);
-	float paddleX = 0;
-	float paddleY = 280; // starting Y position
+	float paddleX = 0.0f;
+	float paddleY = 280.0f; // starting Y position
 	uint64_t prevTime = SDL_GetTicks();
 
-	// Game loop
 	bool running = true;
+
+	// Game loop
 	while (running)
 	{
-		uint64_t nowTime = SDL_GetTicks();
-		float deltaTime = (nowTime - prevTime) / 1000.0f;
+		// --- Time step ---
+		const uint64_t nowTime = SDL_GetTicks();
+		const float deltaTime = (nowTime - prevTime) / 1000.0f;
+		prevTime = nowTime;
 
+		// Per–frame menu actions (set by keyboard and ImGui)
+		bool startGame = false;
+		bool quitFromMenu = false;
+
+		// --- Event handling ---
 		SDL_Event event{0};
 		while (SDL_PollEvent(&event))
 		{
+			// Let ImGui consume all events first
+			ImGui_ImplSDL3_ProcessEvent(&event);
+
 			switch (event.type)
 			{
 			case SDL_EVENT_QUIT:
 				running = false;
 				break;
+
 			case SDL_EVENT_WINDOW_RESIZED:
 				state.width = event.window.data1;
 				state.height = event.window.data2;
 				break;
+
+			case SDL_EVENT_KEY_DOWN:
+				if (gameState == GameState::Menu)
+				{
+					// Keyboard controls for the menu (ENTER, ESC, etc.)
+					menu.handleEvent(event, soundOn, musicOn, highscore,
+									 startGame, quitFromMenu);
+				}
+				else if (gameState == GameState::Playing)
+				{
+					// Allow ESC to go back to the menu while playing
+					if (event.key.key == SDLK_ESCAPE)
+					{
+						gameState = GameState::Menu;
+					}
+				}
+				break;
+
+			default:
+				break;
 			}
 		}
 
-		// Input handling
-		float paddleSpeed = 150; // per second
-		float moveAmount = 0;
-		if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])
+		// --- Start ImGui frame ---
+		ImGui_ImplSDLRenderer3_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+
 		{
-			moveAmount -= paddleSpeed;
-			printf("Left key pressed\n");
-		}
-		if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT])
-		{
-			moveAmount += paddleSpeed;
-			printf("Right key pressed\n");
-		}
-		paddleX += moveAmount * deltaTime;
-		// Wrap paddleX within screen bounds
-		if (paddleX < -spriteSize)
-		{
-			paddleX = state.logicalWidth - spriteSize;
-		}
-		else if (paddleX > state.logicalWidth)
-		{
-			paddleX = 0;
+			float scaleX, scaleY;
+			SDL_GetRenderScale(state.renderer, &scaleX, &scaleY);
+			ImGuiIO &io = ImGui::GetIO();
+			io.DisplayFramebufferScale = ImVec2(scaleX, scaleY);
 		}
 
-		// Paddle positioning
-		SDL_FRect src{
-			.x = 0,
-			.y = 0,
-			.w = spriteSize,
-			.h = spriteSize};
+		// --- Game update (only when playing) ---
+		if (gameState == GameState::Playing)
+		{
+			const float paddleSpeed = 150.0f; // pixels per second
+			float moveAmount = 0.0f;
 
-		SDL_FRect dst{
-			.x = paddleX,
-			.y = paddleY,
-			.w = spriteSize,
-			.h = spriteSize};
+			if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])
+			{
+				moveAmount -= paddleSpeed;
+			}
+			if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT])
+			{
+				moveAmount += paddleSpeed;
+			}
 
-		// Background clear
-		SDL_SetRenderDrawColor(state.renderer, 40, 40, 40, 255);
+			paddleX += moveAmount * deltaTime;
+
+			// Wrap paddleX within logical screen bounds
+			if (paddleX < -spriteSize)
+			{
+				paddleX = state.logicalWidth - spriteSize;
+			}
+			else if (paddleX > state.logicalWidth)
+			{
+				paddleX = 0.0f;
+			}
+		}
+
+		// --- Rendering ---
+		SDL_SetRenderDrawColor(state.renderer, 10, 10, 40, 255);
 		SDL_RenderClear(state.renderer);
 
-		// Render paddle
-		SDL_RenderTexture(state.renderer, paddleTexture, &src, &dst);
+		if (gameState == GameState::Menu)
+		{
+			// ImGui–driven start screen
+			SDL_FRect bgRect{
+				.x = 0.0f,
+				.y = 0.0f,
+				.w = (float)state.logicalWidth,
+				.h = (float)state.logicalHeight};
+			SDL_RenderTexture(state.renderer, bgTexture, nullptr, &bgRect);
 
-		// Re-render for wrap-around if needed
-		if (paddleX < spriteSize)
-		{
-			SDL_FRect wrapDst = dst;
-			wrapDst.x = paddleX + state.logicalWidth;
-			SDL_RenderTexture(state.renderer, paddleTexture, &src, &wrapDst);
+			// 2) draw UI on top
+			menu.render(state.renderer,
+						soundOn, musicOn, highscore,
+						startGame, quitFromMenu,
+						state.logicalWidth, state.logicalHeight);
 		}
-		else if (paddleX + spriteSize > state.logicalWidth - spriteSize)
+		else if (gameState == GameState::Playing)
 		{
-			SDL_FRect wrapDst = dst;
-			wrapDst.x = paddleX - state.logicalWidth;
-			SDL_RenderTexture(state.renderer, paddleTexture, &src, &wrapDst);
+			// Paddle sprite
+			SDL_FRect src{
+				.x = 0.0f,
+				.y = 0.0f,
+				.w = spriteSize,
+				.h = spriteSize};
+
+			SDL_FRect dst{
+				.x = paddleX,
+				.y = paddleY,
+				.w = spriteSize,
+				.h = spriteSize};
+
+			SDL_RenderTexture(state.renderer, paddleTexture, &src, &dst);
+
+			// Wrap–around rendering if needed
+			if (paddleX < spriteSize)
+			{
+				SDL_FRect wrapDst = dst;
+				wrapDst.x = paddleX + state.logicalWidth;
+				SDL_RenderTexture(state.renderer, paddleTexture, &src, &wrapDst);
+			}
+			else if (paddleX + spriteSize > state.logicalWidth - spriteSize)
+			{
+				SDL_FRect wrapDst = dst;
+				wrapDst.x = paddleX - state.logicalWidth;
+				SDL_RenderTexture(state.renderer, paddleTexture, &src, &wrapDst);
+			}
 		}
+
+		// --- React to menu actions (from keyboard or buttons) ---
+		if (quitFromMenu)
+		{
+			running = false;
+		}
+		else if (startGame && gameState == GameState::Menu)
+		{
+			gameState = GameState::Playing;
+
+			// Reset gameplay state when entering the game
+			paddleX = 0.0f;
+			paddleY = 280.0f;
+		}
+
+		// --- ImGui + present ---
+		ImGui::Render();
+		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), state.renderer);
 
 		SDL_RenderPresent(state.renderer);
 
-		// Delta time and FPS cap
-		prevTime = nowTime;
-		SDL_Delay(16); // Roughly 60 FPS
+		// Simple frame cap (~60 FPS)
+		SDL_Delay(16);
 	}
 
 	// Cleanup GPU textures
 	SDL_DestroyTexture(paddleTexture);
+	ImGui_ImplSDLRenderer3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImGui::DestroyContext();
 
 	cleanup(state);
 }

@@ -1,6 +1,8 @@
 {
     "files.associations": {
         ".fantomasignore": "ignore",
-        "ios": "cpp"
+        "ios": "cpp",
+        "new": "cpp",
+        "__node_handle": "cpp"
     }
 }
