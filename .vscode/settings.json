@@ -3,6 +3,7 @@
         ".fantomasignore": "ignore",
         "ios": "cpp",
         "new": "cpp",
-        "__node_handle": "cpp"
+        "__node_handle": "cpp",
+        "locale": "cpp"
     }
 }

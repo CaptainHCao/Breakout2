@@ -8,6 +8,7 @@ add_executable(Breakout
     src/main.cpp
     src/game/Breakout.cpp
     src/ui/Menu.cpp
+    src/audio/Audio.cpp
 )
 
 add_library(imgui
@@ -20,13 +21,15 @@ add_library(imgui
     external/imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
 
+
 target_include_directories(imgui PUBLIC
     external/imgui
     external/imgui/backends
 )
 
+
 target_include_directories(Breakout PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
+     ${PROJECT_SOURCE_DIR}/include
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -37,4 +40,8 @@ target_link_libraries(Breakout PRIVATE
     SDL3::SDL3
     SDL3_image::SDL3_image
     imgui
+)
+
+target_link_libraries(imgui PUBLIC
+    SDL3::SDL3
 )

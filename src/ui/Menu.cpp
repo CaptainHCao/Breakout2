@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include "imgui.h"
 #include "Breakout.h"
+#include "Audio.h"
 
 void Menu::render(SDL_Renderer *renderer,
                   bool soundOn, bool musicOn, int highscore,

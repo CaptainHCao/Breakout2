@@ -9,11 +9,14 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
+#include "Audio.h"
+
 struct SDL_State
 {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	int width, height, logicalWidth, logicalHeight;
+	MusicPlayer music;
 };
 
 bool initialize(SDL_State &state);
@@ -32,11 +35,14 @@ void Breakout::run()
 		return;
 	}
 
+	if (!state.music.init("assets/audio/funarcade.wav"))
+	{
+		SDL_Log("Music init failed!");
+	}
 	// ImGui init
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
-	(void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplSDL3_InitForSDLRenderer(state.window, state.renderer);
 	ImGui_ImplSDLRenderer3_Init(state.renderer);
@@ -61,12 +67,16 @@ void Breakout::run()
 
 	if (!paddleTexture)
 	{
-		SDL_Log("Failed to load texture: %s", SDL_GetError());
+		SDL_Log("Failed to load paddle texture: %s", SDL_GetError());
+		cleanup(state);
 		return;
 	}
 
 	SDL_Texture *bgTexture = IMG_LoadTexture(state.renderer, "assets/textures/dragon.png");
-
+	if (!bgTexture)
+	{
+		SDL_Log("Failed to load dragon.png: %s", SDL_GetError());
+	}
 	SDL_SetTextureScaleMode(bgTexture, SDL_SCALEMODE_NEAREST);
 
 	SDL_SetTextureScaleMode(paddleTexture, SDL_SCALEMODE_NEAREST);
@@ -242,6 +252,9 @@ void Breakout::run()
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), state.renderer);
 
+		state.music.setEnabled(musicOn);
+		state.music.update();
+
 		SDL_RenderPresent(state.renderer);
 
 		// Simple frame cap (~60 FPS)
@@ -250,6 +263,7 @@ void Breakout::run()
 
 	// Cleanup GPU textures
 	SDL_DestroyTexture(paddleTexture);
+
 	ImGui_ImplSDLRenderer3_Shutdown();
 	ImGui_ImplSDL3_Shutdown();
 	ImGui::DestroyContext();
@@ -263,9 +277,9 @@ bool initialize(SDL_State &state)
 	bool success = true;
 
 	// Init SDL3
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to init SDL3", nullptr);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to init SDL3 (video+audio)", nullptr);
 		success = false;
 	}
 
@@ -304,6 +318,7 @@ bool initialize(SDL_State &state)
 
 void cleanup(SDL_State &state)
 {
+	state.music.shutdown();
 	SDL_DestroyRenderer(state.renderer);
 	SDL_DestroyWindow(state.window);
 	SDL_Quit();
