@@ -6,7 +6,6 @@
 #include "Breakout.h"
 #include <SDL3_image/SDL_image.h>
 
-
 using namespace std;
 
 struct SDL_State
@@ -19,7 +18,7 @@ struct SDL_State
 bool initialize(SDL_State &state);
 void cleanup(SDL_State &state);
 
-int main(int argc, char *argv[])
+void Breakout::run()
 {
 	SDL_State state;
 	state.width = 1600;
@@ -29,15 +28,16 @@ int main(int argc, char *argv[])
 
 	if (!initialize(state))
 	{
-		return 1;
+		return;
 	}
 
 	// Asset loading
-	SDL_Texture *paddleTexture = IMG_LoadTexture(state.renderer, "assets/paddle.png");
+	SDL_Texture *paddleTexture = IMG_LoadTexture(state.renderer, "assets/textures/paddle.png");
 
-	if(!paddleTexture){
+	if (!paddleTexture)
+	{
 		SDL_Log("Failed to load texture: %s", SDL_GetError());
-		return SDL_APP_FAILURE;
+		return;
 	}
 
 	SDL_SetTextureScaleMode(paddleTexture, SDL_SCALEMODE_NEAREST);
@@ -140,7 +140,6 @@ int main(int argc, char *argv[])
 	SDL_DestroyTexture(paddleTexture);
 
 	cleanup(state);
-	return 0;
 }
 
 bool initialize(SDL_State &state)

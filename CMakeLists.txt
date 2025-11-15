@@ -12,4 +12,4 @@ endif()
 project ("Breakout")
 
 # Include sub-projects.
-add_subdirectory ("Breakout")
+add_subdirectory (src)
