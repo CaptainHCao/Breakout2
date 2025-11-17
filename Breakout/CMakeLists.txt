@@ -6,7 +6,7 @@
 find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
 
-add_executable (Breakout "Breakout.cpp" "Breakout.h")
+add_executable (Breakout "Breakout.cpp" "Breakout.h" "GameStates.h" "BallLogic.cpp" "BallLogic.h" "BrickLogic.h" "BrickLogic.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Breakout PROPERTY CXX_STANDARD 20)

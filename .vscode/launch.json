@@ -1,0 +1,16 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "Breakout.exe (Breakout\\Breakout.exe)",
+      "name": "Breakout.exe (Breakout\\Breakout.exe)",
+      "env": {
+        "PATH": "C:\\Projects\\SDL3-3.2.26\\lib\\x64;C:\\Projects\\SDL3_image-3.2.4\\lib\\x64;%PATH%"
+      },
+      "currentDir": "C:\\Projects\\Breakout2"
+    }
+  ]
+}

@@ -6,7 +6,7 @@
         "displayName": "x64 Debug (User)",
         "inherits": "x64-debug",
         "cacheVariables": {
-          "CMAKE_PREFIX_PATH": "C:\\Users\\ghost\\Downloads\\SDL3-devel-3.2.26-VC\\SDL3-3.2.26;C:\\Users\\ghost\\Downloads\\SDL3_image-devel-3.2.4-VC\\SDL3_image-3.2.4"
+            "CMAKE_PREFIX_PATH": "C:\\Projects\\SDL3-3.2.26;C:\\Projects\\SDL3_image-3.2.4"
         }
       }
     ]
