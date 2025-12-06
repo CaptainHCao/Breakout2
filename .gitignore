@@ -3,6 +3,24 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Visual Studio
+.vs/
+*.VC.db
+*.opendb
+*.suo
+
+# CMake builds
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+
+# Other build artefacts
+*.pdb
+*.ilk
+*.obj
+*.exe
+*.log
 
 # vendored
 /vendored
