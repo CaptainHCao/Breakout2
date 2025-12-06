@@ -10,3 +10,9 @@ struct Game {
 
     int run();
 };
+
+IGameState* currentState = nullptr;
+MenuState menuState;
+PlayingState playingState;
+
+void changeState(GameStateID id);

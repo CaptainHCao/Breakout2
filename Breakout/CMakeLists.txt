@@ -3,7 +3,7 @@ find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
 
 add_executable(Breakout
-    "Main.cpp"
+    "main.cpp"
     "Menu.cpp"
     "SDLApp.h"
     "SDLApp.cpp"
