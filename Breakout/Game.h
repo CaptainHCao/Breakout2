@@ -1,13 +1,12 @@
+// Game.h
 #pragma once
+#include <SDL3/SDL.h>
 #include "SDLApp.h"
 #include "Paddle.h"
 
-class Game {
-public:
-    Game() = default;
-    int run();   // main game loop
-
-private:
+struct Game {
     SDLApp app;
-    Paddle paddle;
+    Paddle paddle;      // later you add Ball, Bricks, Audio, Menu, etc.
+
+    int run();
 };

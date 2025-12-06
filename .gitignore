@@ -9,6 +9,8 @@
 *.opendb
 *.suo
 
+vcpkg/
+
 # CMake builds
 out/
 CMakeFiles/

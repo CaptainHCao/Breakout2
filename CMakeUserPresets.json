@@ -1,15 +1,4 @@
 ﻿{
-<<<<<<< Updated upstream
-    "version": 3,
-    "configurePresets": [
-      {
-        "name": "x64-debug-user",
-        "displayName": "x64 Debug (User)",
-        "inherits": "x64-debug",
-        "cacheVariables": {
-            "CMAKE_PREFIX_PATH": "C:\\Projects\\SDL3-3.2.26;C:\\Projects\\SDL3_image-3.2.4"
-        }
-=======
   "version": 3,
   "configurePresets": [
     {
@@ -17,8 +6,7 @@
       "displayName": "x64 Debug (User)",
       "inherits": "x64-debug",
       "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "C:\\Users\\Maria\\SDKs\\SDL3-3.2.28;C:\\Users\\Maria\\SDKs\\SDL3_image-3.2.4;C:\\Users\\Maria\\SDKs\\imgui;"
->>>>>>> Stashed changes
+        "CMAKE_PREFIX_PATH": "C:\\Users\\Maria\\SDKs\\SDL3-3.2.28;C:\\Users\\Maria\\SDKs\\SDL3_image-3.2.4;C:\\Users\\Maria\\SDKs\\imgui"
       }
     }
   ]
