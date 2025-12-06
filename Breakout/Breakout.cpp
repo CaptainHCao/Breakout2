@@ -1,6 +1,7 @@
-﻿// Breakout.cpp : Defines the entry point for the application.
-//
+﻿#include <SDL3/SDL_main.h>
+#include "Game.h"
 
+<<<<<<< Updated upstream
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "Breakout.h"
@@ -228,3 +229,9 @@ void cleanup(SDL_State &state)
 	SDL_DestroyWindow(state.window);
 	SDL_Quit();
 }
+=======
+int main(int argc, char* argv[]) {
+    Game game;
+    return game.run();
+}
+>>>>>>> Stashed changes
