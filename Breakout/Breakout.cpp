@@ -42,7 +42,9 @@ int main(int argc, char* argv[])
 	SDL_Texture* ballTexture = IMG_LoadTexture(state.renderer, "assets/Ball.png");
 	SDL_SetTextureScaleMode(ballTexture, SDL_SCALEMODE_NEAREST);
 	const int brickW = 32;
-	const int brickH = 32;
+	const int brickH = 16;
+	SDL_Texture* brickTexture = IMG_LoadTexture(state.renderer, "assets/brick.png");
+	SDL_SetTextureScaleMode(brickTexture, SDL_SCALEMODE_NEAREST);
 
 	// Spawn bricks in the top half
 	std::vector<Brick> bricks = spawnBricks(state.logicalWidth, state.logicalHeight, brickW, brickH, 10, 4);
@@ -144,7 +146,7 @@ int main(int argc, char* argv[])
 		SDL_RenderTexture(state.renderer, ballTexture, nullptr, &ball.rect);
 		// Render bricks
 		for (Brick& b : bricks) {
-			if (b.alive) SDL_RenderTexture(state.renderer, paddleTexture, nullptr, &b.rect);
+			if (b.alive) SDL_RenderTexture(state.renderer, brickTexture, nullptr, &b.rect);
 		}
 		// Re-render for wrap-around if needed
 		if (paddleX < paddleW) {
@@ -182,6 +184,8 @@ int main(int argc, char* argv[])
 
 	// Cleanup GPU textures
 	SDL_DestroyTexture(paddleTexture);
+	SDL_DestroyTexture(ballTexture);
+	SDL_DestroyTexture(brickTexture);
 
 	cleanup(state);
 	return 0;
