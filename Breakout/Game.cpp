@@ -1,8 +1,7 @@
-// main loopImplementation of the main game loop for the Breakout game.
-
 #include "Game.h"
 #include "Menu.h"
 #include "SDLApp.h"
+#include "GameStates.h"  
 
 #include <SDL3_image/SDL_image.h>
 #include "imgui.h"
@@ -10,26 +9,15 @@
 #include "imgui_impl_sdlrenderer3.h"
 
 
-
-void Game::changeState(GameStateID id)
+Game::Game()
+    : currentState(GameStateID::Menu)    
 {
-    switch (id)
-    {
-    case GameStateID::Menu:
-        SDL_Log("DEBUG: Switching to MENU");
-        currentState = &menuState;
-        break;
-
-    case GameStateID::Playing:
-        SDL_Log("DEBUG: Switching to PLAYING");
-        currentState = &playingState;
-        break;
-    }
 }
+
 
 int Game::run()
 {
-    // --- Init ---
+    // --- Init SDL/window/renderer ---
     app.width = 1600;
     app.height = 900;
     app.logicalWidth = 640;
@@ -38,8 +26,10 @@ int Game::run()
     if (!app.init("Breakout Game"))
         return 1;
 
-    app.music.init("assets/audio/funarcade.wav");
+    if (!app.music.init("assets/funarcade.wav"))
+        SDL_Log("Music init failed!");
 
+    // --- Init ImGui ---
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -48,134 +38,202 @@ int Game::run()
     ImGui_ImplSDLRenderer3_Init(app.renderer);
 
     // --- Load assets ---
-    paddleTexture = IMG_LoadTexture(app.renderer, "assets/textures/paddle.png");
-    bgTexture = IMG_LoadTexture(app.renderer, "assets/textures/dragon.png");
+    SDL_Texture* paddleTexture = IMG_LoadTexture(app.renderer, "assets/paddle.png");
+    if (!paddleTexture) {
+        SDL_Log("Failed to load paddle texture: %s", SDL_GetError());
+        app.shutdown();
+        return 1;
+    }
+
+    SDL_Texture* bgTexture = IMG_LoadTexture(app.renderer, "assets/dragon.png");
+    if (!bgTexture) {
+        SDL_Log("Failed to load dragon.png: %s", SDL_GetError());
+    }
+
     SDL_SetTextureScaleMode(bgTexture, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureScaleMode(paddleTexture, SDL_SCALEMODE_NEAREST);
 
-    // --- Game state ---
-    enum class GameState { Menu, Playing };
-    GameState gameState = GameState::Menu;
+    const float spriteSize = 32.0f;
+    const bool* keys = SDL_GetKeyboardState(nullptr);
 
-    Menu menu;
+    float paddleX = 0.0f;
+    float paddleY = 280.0f;
+
+    // --- Game / menu state ---
+    enum class GameState { Menu, Playing };
+    GameState gameState = GameState::Menu;   // ? STARTUP SCREEN FIRST
 
     bool soundOn = true;
     bool musicOn = true;
     int  highscore = 0;
 
-    const bool* keys = SDL_GetKeyboardState(NULL);
-
-    float paddleX = 0.0f;
-    float paddleY = 280.0f;
-    const float spriteSize = 32.0f;
+    Menu menu;
 
     bool running = true;
     uint64_t prevTime = SDL_GetTicks();
 
-    // -------------------------
-    //        MAIN LOOP
-    // -------------------------
+    SDL_Log("DEBUG: Entering game loop, initial state = MENU");
+
+    // ===========================
+    //         GAME LOOP
+    // ===========================
     while (running)
     {
         // --- Time step ---
-        uint64_t now = SDL_GetTicks();
-        float dt = (now - prevTime) / 1000.0f;
-        prevTime = now;
+        const uint64_t nowTime = SDL_GetTicks();
+        const float    deltaTime = (nowTime - prevTime) / 1000.0f;
+        prevTime = nowTime;
 
-        // These will be set by Menu
+        // Per–frame menu actions (set by keyboard and ImGui)
         bool startGame = false;
         bool quitFromMenu = false;
 
-        // -------- EVENTS --------
-        SDL_Event event;
+        // --- Event handling ---
+        SDL_Event event{ 0 };
         while (SDL_PollEvent(&event))
         {
+            // Let ImGui consume all events first
             ImGui_ImplSDL3_ProcessEvent(&event);
 
-            if (event.type == SDL_EVENT_QUIT)
+            if (event.type == SDL_EVENT_QUIT) {
+                SDL_Log("DEBUG: SDL_EVENT_QUIT received");
                 running = false;
-
-            if (event.type == SDL_EVENT_WINDOW_RESIZED)
-            {
-                app.width = event.window.data1;
-                app.height = event.window.data2;
             }
 
-            if (event.type == SDL_EVENT_KEY_DOWN)
-            {
-                if (gameState == GameState::Menu)
-                {
-                    menu.handleEvent(event, soundOn, musicOn,
-                        highscore, startGame, quitFromMenu);
+            if (event.type == SDL_EVENT_WINDOW_RESIZED) {
+                app.width = event.window.data1;
+                app.height = event.window.data2;
+                SDL_Log("DEBUG: Window resized to %d x %d", app.width, app.height);
+            }
+
+            if (event.type == SDL_EVENT_KEY_DOWN) {
+                SDL_Log("DEBUG: Key down: scancode=%d", event.key.scancode);
+
+                if (gameState == GameState::Menu) {
+                    // keyboard controls for the startup screen
+                    menu.handleEvent(
+                        event,
+                        soundOn, musicOn, highscore,
+                        startGame, quitFromMenu
+                    );
                 }
-                else if (gameState == GameState::Playing)
-                {
-                    if (event.key.key == SDLK_ESCAPE)
+                else if (gameState == GameState::Playing) {
+                    // ESC to go back to startup screen
+                    if (event.key.key == SDLK_ESCAPE) {
+                        SDL_Log("DEBUG: ESC in Playing -> go back to Menu");
                         gameState = GameState::Menu;
+                    }
                 }
             }
         }
 
-        // -------- IMGUI BEGIN --------
+        // --- Start ImGui frame ---
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        // -------- UPDATE --------
+        {
+            float scaleX, scaleY;
+            SDL_GetRenderScale(app.renderer, &scaleX, &scaleY);
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplayFramebufferScale = ImVec2(scaleX, scaleY);
+        }
+
+        // ?? DEBUG OVERLAY: always show current state in a small ImGui window
+        {
+            ImGui::Begin("DEBUG STATE");
+            ImGui::Text("State: %s",
+                (gameState == GameState::Menu) ? "MENU (startup)" : "PLAYING");
+            ImGui::End();
+        }
+
+        // --- Game update (only when playing) ---
         if (gameState == GameState::Playing)
         {
-            float paddleSpeed = 150.0f;
-            float dx = 0.0f;
+            const float paddleSpeed = 150.0f; // pixels per second
+            float moveAmount = 0.0f;
 
-            if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])  dx -= paddleSpeed;
-            if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) dx += paddleSpeed;
+            if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])
+                moveAmount -= paddleSpeed;
+            if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT])
+                moveAmount += paddleSpeed;
 
-            paddleX += dx * dt;
+            paddleX += moveAmount * deltaTime;
 
-            // wrap-around
+            // Wrap paddleX within logical screen bounds
             if (paddleX < -spriteSize)
                 paddleX = app.logicalWidth - spriteSize;
             else if (paddleX > app.logicalWidth)
                 paddleX = 0.0f;
         }
 
-        // -------- RENDER --------
+        // --- Rendering ---
         SDL_SetRenderDrawColor(app.renderer, 10, 10, 40, 255);
         SDL_RenderClear(app.renderer);
 
         if (gameState == GameState::Menu)
         {
+            SDL_Log("DEBUG: Rendering MENU frame");
+
             // Background
-            SDL_FRect bgRect{ 0,0,(float)app.logicalWidth,(float)app.logicalHeight };
-            SDL_RenderTexture(app.renderer, bgTexture, NULL, &bgRect);
+            SDL_FRect bgRect{
+                .x = 0.0f,
+                .y = 0.0f,
+                .w = (float)app.logicalWidth,
+                .h = (float)app.logicalHeight
+            };
+            if (bgTexture) {
+                SDL_RenderTexture(app.renderer, bgTexture, nullptr, &bgRect);
+            }
 
-            // Menu UI
-            menu.render(app.renderer, soundOn, musicOn, highscore,
+            // Startup screen UI on top
+            menu.render(
+                app.renderer,
+                soundOn, musicOn, highscore,
                 startGame, quitFromMenu,
-                app.logicalWidth, app.logicalHeight);
+                app.logicalWidth, app.logicalHeight
+            );
         }
-        else  // PLAYING
+        else if (gameState == GameState::Playing)
         {
-            SDL_FRect src{ 0,0,spriteSize,spriteSize };
-            SDL_FRect dst{ paddleX,paddleY,spriteSize,spriteSize };
+            SDL_Log("DEBUG: Rendering PLAYING frame, paddleX=%.2f", paddleX);
+
+            SDL_FRect src{ 0.0f, 0.0f, spriteSize, spriteSize };
+            SDL_FRect dst{ paddleX, paddleY, spriteSize, spriteSize };
+
             SDL_RenderTexture(app.renderer, paddleTexture, &src, &dst);
-        }
 
-        // -------- STATE SWITCH --------
-        if (gameState == GameState::Menu)
-        {
-            if (quitFromMenu)
-                running = false;
-
-            if (startGame)
+            // Optional wrap–around rendering
+            if (paddleX < spriteSize)
             {
-                gameState = GameState::Playing;
-                paddleX = 0;
-                paddleY = 280;
+                SDL_FRect wrapDst = dst;
+                wrapDst.x = paddleX + app.logicalWidth;
+                SDL_RenderTexture(app.renderer, paddleTexture, &src, &wrapDst);
+            }
+            else if (paddleX + spriteSize > app.logicalWidth - spriteSize)
+            {
+                SDL_FRect wrapDst = dst;
+                wrapDst.x = paddleX - app.logicalWidth;
+                SDL_RenderTexture(app.renderer, paddleTexture, &src, &wrapDst);
             }
         }
 
-        // -------- IMGUI END + PRESENT --------
+        // --- React to menu actions (keyboard or ImGui) ---
+        if (gameState == GameState::Menu)
+        {
+            if (quitFromMenu) {
+                SDL_Log("DEBUG: quitFromMenu = true -> exiting");
+                running = false;
+            }
+            else if (startGame) {
+                SDL_Log("DEBUG: startGame = true -> switch to PLAYING");
+                gameState = GameState::Playing;
+                paddleX = 0.0f;
+                paddleY = 280.0f;
+            }
+        }
+
+        // --- ImGui + present + music ---
         ImGui::Render();
         ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), app.renderer);
 
@@ -184,13 +242,13 @@ int Game::run()
 
         SDL_RenderPresent(app.renderer);
 
-        // 60 FPS cap
+        // Simple frame cap (~60 FPS)
         SDL_Delay(16);
     }
 
-    // --- Cleanup ---
+    // Cleanup (after the loop)
     SDL_DestroyTexture(paddleTexture);
-    SDL_DestroyTexture(bgTexture);
+    if (bgTexture) SDL_DestroyTexture(bgTexture);
 
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
@@ -198,5 +256,9 @@ int Game::run()
 
     app.shutdown();
     return 0;
+
 }
 
+void Game::changeState(GameStateID newState) {
+    currentState = newState;
+}

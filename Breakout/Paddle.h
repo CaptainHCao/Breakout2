@@ -10,7 +10,7 @@ public:
     SDL_Texture* texture = nullptr;
 
     bool load(SDL_Renderer* renderer);
-    void update(float dt, int logicalWidth,const bool* keys);
-    void render(SDL_Renderer* renderer, int logicalWidth);
+    void update(float dt, int logicalWidth);              
+    void render(SDL_Renderer* renderer, int logicalWidth) const;
     void destroy();
 };

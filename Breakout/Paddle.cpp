@@ -3,29 +3,37 @@
 
 bool Paddle::load(SDL_Renderer* renderer) {
     texture = IMG_LoadTexture(renderer, "assets/paddle.png");
-    if (!texture) return false;
+    if (!texture) {
+        SDL_Log("Failed to load paddle texture: %s", SDL_GetError());
+        return false;
+    }
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
     return true;
 }
 
-void Paddle::update(float dt, int logicalWidth, const bool* keys) {
+void Paddle::update(float dt, int logicalWidth) {
+    const bool* keys = SDL_GetKeyboardState(nullptr);
+
     float move = 0.0f;
     if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])  move -= speed;
     if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) move += speed;
 
     x += move * dt;
 
-    if (x < -size) x = logicalWidth - size;
-    else if (x > logicalWidth) x = 0.0f;
+    // wrap-around
+    if (x < -size)              x = logicalWidth - size;
+    else if (x > logicalWidth)  x = 0.0f;
 }
 
-void Paddle::render(SDL_Renderer* renderer, int logicalWidth) {
-    SDL_FRect src{ 0, 0, size, size };
+void Paddle::render(SDL_Renderer* renderer, int logicalWidth) const {
+    if (!texture) return;
+
+    SDL_FRect src{ 0.0f, 0.0f, size, size };
     SDL_FRect dst{ x, y, size, size };
 
     SDL_RenderTexture(renderer, texture, &src, &dst);
 
-    // wrap-around drawing
+    // wrap-around drawing on both sides
     if (x < size) {
         SDL_FRect wrap = dst;
         wrap.x = x + logicalWidth;
@@ -39,6 +47,8 @@ void Paddle::render(SDL_Renderer* renderer, int logicalWidth) {
 }
 
 void Paddle::destroy() {
-    if (texture) SDL_DestroyTexture(texture);
-    texture = nullptr;
+    if (texture) {
+        SDL_DestroyTexture(texture);
+        texture = nullptr;
+    }
 }

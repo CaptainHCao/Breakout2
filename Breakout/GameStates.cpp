@@ -35,7 +35,15 @@ void MenuState::render(Game& game)
 
     // Draw background
     SDL_FRect rect{ 0,0,(float)game.app.logicalWidth,(float)game.app.logicalHeight };
-    SDL_RenderTexture(game.app.renderer, game.bgTexture, nullptr, &rect);
+
+    SDL_FRect destRect{
+    0.0f,
+    0.0f,
+    static_cast<float>(game.app.logicalWidth),
+    static_cast<float>(game.app.logicalHeight)
+    };
+
+    SDL_RenderTexture(game.app.renderer, game.bgTexture, nullptr, &destRect);
 
     // Draw menu UI (ImGui)
     game.menu.render(
@@ -60,7 +68,7 @@ void PlayingState::handleEvent(Game& game, const SDL_Event& e)
 
 void PlayingState::update(Game& game, float dt)
 {
-    game.paddle.update(dt, game.app.logicalWidth, game.keys);
+    game.paddle.update(dt, game.app.logicalWidth);
 }
 
 void PlayingState::render(Game& game)
