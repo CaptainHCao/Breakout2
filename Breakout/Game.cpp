@@ -1,19 +1,22 @@
 #include "Game.h"
 #include "Menu.h"
 #include "SDLApp.h"
-#include "GameStates.h"  
+#include "GameStates.h"
+
+#include "Paddle.h"
+#include "Brick.h"
+#include "BrickLogic.h"
+#include "BallLogic.h"
 
 #include <SDL3_image/SDL_image.h>
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
-
 Game::Game()
-    : currentState(GameStateID::Menu)    
+    : currentState(GameStateID::Menu)
 {
 }
-
 
 int Game::run()
 {
@@ -37,10 +40,7 @@ int Game::run()
     ImGui_ImplSDL3_InitForSDLRenderer(app.window, app.renderer);
     ImGui_ImplSDLRenderer3_Init(app.renderer);
 
-    // --- Load assets ---
-    SDL_Texture* paddleTexture = IMG_LoadTexture(app.renderer, "assets/paddle.png");
-    if (!paddleTexture) {
-        SDL_Log("Failed to load paddle texture: %s", SDL_GetError());
+    if (!paddle.load(app.renderer)) {
         app.shutdown();
         return 1;
     }
@@ -49,15 +49,44 @@ int Game::run()
     if (!bgTexture) {
         SDL_Log("Failed to load dragon.png: %s", SDL_GetError());
     }
-
     SDL_SetTextureScaleMode(bgTexture, SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(paddleTexture, SDL_SCALEMODE_NEAREST);
 
-    const float spriteSize = 32.0f;
-    const bool* keys = SDL_GetKeyboardState(nullptr);
 
-    float paddleX = 0.0f;
-    float paddleY = 280.0f;
+    SDL_Texture* ballTexture = IMG_LoadTexture(app.renderer, "assets/Ball.png");
+    if (!ballTexture) {
+        SDL_Log("Failed to load Ball.png: %s", SDL_GetError());
+    }
+    SDL_SetTextureScaleMode(ballTexture, SDL_SCALEMODE_NEAREST);
+    Ball ball(8.0f);
+
+    SDL_Texture* brickTexture = IMG_LoadTexture(app.renderer, "assets/paddle.png");
+    if (!brickTexture) {
+        SDL_Log("Failed to load brick texture: %s", SDL_GetError());
+    }
+
+    //--- Create bricks ---
+    const int brickW = 32;
+    const int brickH = 16;
+    const int margin = 10;   // distance from edges
+    const int padding = 4;    // gap between bricks
+
+    std::vector<Brick> bricks = spawnBricks(
+        app.logicalWidth,
+        app.logicalHeight,
+        brickW,
+        brickH,
+        margin,
+        padding
+    );
+
+    // assign texture to each brick
+    for (auto& b : bricks) {
+        b.texture = brickTexture;
+    }
+
+    int lives = 3;
+  
+
 
     // --- Game / menu state ---
     enum class GameState { Menu, Playing };
@@ -92,7 +121,6 @@ int Game::run()
         SDL_Event event{ 0 };
         while (SDL_PollEvent(&event))
         {
-            // Let ImGui consume all events first
             ImGui_ImplSDL3_ProcessEvent(&event);
 
             if (event.type == SDL_EVENT_QUIT) {
@@ -123,6 +151,9 @@ int Game::run()
                         SDL_Log("DEBUG: ESC in Playing -> go back to Menu");
                         gameState = GameState::Menu;
                     }
+                    else if (event.key.key == SDLK_SPACE) {
+                        ball.launch();  
+                    }
                 }
             }
         }
@@ -139,7 +170,7 @@ int Game::run()
             io.DisplayFramebufferScale = ImVec2(scaleX, scaleY);
         }
 
-        // ?? DEBUG OVERLAY: always show current state in a small ImGui window
+        // DEBUG OVERLAY: always show current state in a small ImGui window
         {
             ImGui::Begin("DEBUG STATE");
             ImGui::Text("State: %s",
@@ -150,21 +181,19 @@ int Game::run()
         // --- Game update (only when playing) ---
         if (gameState == GameState::Playing)
         {
-            const float paddleSpeed = 150.0f; // pixels per second
-            float moveAmount = 0.0f;
+            paddle.update(deltaTime, app.logicalWidth);
 
-            if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])
-                moveAmount -= paddleSpeed;
-            if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT])
-                moveAmount += paddleSpeed;
+            SDL_FRect paddleRect = paddle.getRect();
 
-            paddleX += moveAmount * deltaTime;
+            // keep ball attached to paddle if not launched yet
+            if (ball.isAttached()) {
+                ball.attachToPaddle(paddleRect);
+            }
 
-            // Wrap paddleX within logical screen bounds
-            if (paddleX < -spriteSize)
-                paddleX = app.logicalWidth - spriteSize;
-            else if (paddleX > app.logicalWidth)
-                paddleX = 0.0f;
+            ball.update(deltaTime);
+            ball.bounceWalls((float)app.logicalWidth, (float)app.logicalHeight);
+            ball.bouncePaddle(paddleRect);
+            ball.checkOutOfBounds((float)app.logicalHeight, paddleRect);
         }
 
         // --- Rendering ---
@@ -186,6 +215,7 @@ int Game::run()
                 SDL_RenderTexture(app.renderer, bgTexture, nullptr, &bgRect);
             }
 
+
             // Startup screen UI on top
             menu.render(
                 app.renderer,
@@ -196,25 +226,14 @@ int Game::run()
         }
         else if (gameState == GameState::Playing)
         {
-            SDL_Log("DEBUG: Rendering PLAYING frame, paddleX=%.2f", paddleX);
-
-            SDL_FRect src{ 0.0f, 0.0f, spriteSize, spriteSize };
-            SDL_FRect dst{ paddleX, paddleY, spriteSize, spriteSize };
-
-            SDL_RenderTexture(app.renderer, paddleTexture, &src, &dst);
-
-            // Optional wrap–around rendering
-            if (paddleX < spriteSize)
-            {
-                SDL_FRect wrapDst = dst;
-                wrapDst.x = paddleX + app.logicalWidth;
-                SDL_RenderTexture(app.renderer, paddleTexture, &src, &wrapDst);
+            for (const auto& brick : bricks) {
+                brick.render(app.renderer);
             }
-            else if (paddleX + spriteSize > app.logicalWidth - spriteSize)
-            {
-                SDL_FRect wrapDst = dst;
-                wrapDst.x = paddleX - app.logicalWidth;
-                SDL_RenderTexture(app.renderer, paddleTexture, &src, &wrapDst);
+
+            paddle.render(app.renderer, app.logicalWidth);
+            if (ballTexture) {
+                SDL_FRect ballRect = ball.getRect();
+                SDL_RenderTexture(app.renderer, ballTexture, nullptr, &ballRect);
             }
         }
 
@@ -228,8 +247,9 @@ int Game::run()
             else if (startGame) {
                 SDL_Log("DEBUG: startGame = true -> switch to PLAYING");
                 gameState = GameState::Playing;
-                paddleX = 0.0f;
-                paddleY = 280.0f;
+				paddle.setPosition(0.0f, 280.0f);
+                SDL_FRect pRect = paddle.getRect();
+                ball.attachToPaddle(pRect);
             }
         }
 
@@ -247,7 +267,8 @@ int Game::run()
     }
 
     // Cleanup (after the loop)
-    SDL_DestroyTexture(paddleTexture);
+	paddle.destroy();
+
     if (bgTexture) SDL_DestroyTexture(bgTexture);
 
     ImGui_ImplSDLRenderer3_Shutdown();
@@ -256,8 +277,8 @@ int Game::run()
 
     app.shutdown();
     return 0;
-
-}
+    
+}   
 
 void Game::changeState(GameStateID newState) {
     currentState = newState;

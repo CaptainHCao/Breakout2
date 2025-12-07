@@ -1,3 +1,5 @@
+//spawns a collection of bricks --> level-building logic, not per-brick logic
+
 #include <vector>
 #include "BrickLogic.h"
 

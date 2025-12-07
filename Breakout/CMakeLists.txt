@@ -14,6 +14,7 @@ add_executable(Breakout
     Audio.cpp      
     BallLogic.cpp
     GameStates.cpp
+    BrickLogic.cpp
 )
 
 

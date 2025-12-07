@@ -3,14 +3,25 @@
 
 class Paddle {
 public:
-    float x = 0.0f;
-    float y = 280.0f;
-    float speed = 150.0f;
-    float size = 32.0f;
-    SDL_Texture* texture = nullptr;
-
     bool load(SDL_Renderer* renderer);
-    void update(float dt, int logicalWidth);              
+    void update(float dt, int logicalWidth);
     void render(SDL_Renderer* renderer, int logicalWidth) const;
     void destroy();
+
+    void setPosition(float newX, float newY) {
+        x = newX;
+        y = newY;
+    }
+
+    SDL_FRect getRect() const;
+
+private:
+    float x = 0.0f;
+    float y = 280.0f;
+
+    float width = 64.0f;   // defaults, will be overwritten by texture size
+    float height = 16.0f;
+
+    float speed = 160.0f;
+    SDL_Texture* texture = nullptr;
 };

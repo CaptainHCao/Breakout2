@@ -1,11 +1,13 @@
+// BrickLogic.h
 #pragma once
-#include <SDL3/SDL.h>
 #include <vector>
+#include "Brick.h"
 
-struct Brick {
-    SDL_FRect rect;
-    bool alive = true;
-};
-
-// Function declaration
-std::vector<Brick> spawnBricks(int screenWidth, int screenHeight, int brickW, int brickH, int margin = 10, int padding = 4);
+std::vector<Brick> spawnBricks(
+    int screenWidth,
+    int screenHeight,
+    int brickW,
+    int brickH,
+    int margin,
+    int padding
+);

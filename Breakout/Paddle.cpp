@@ -8,6 +8,17 @@ bool Paddle::load(SDL_Renderer* renderer) {
         return false;
     }
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+
+    // Get the actual texture size 
+    float texW = 0.0f, texH = 0.0f;
+    if (SDL_GetTextureSize(texture, &texW, &texH)) {
+        width = texW;
+        height = texH;
+    }
+    else {
+        SDL_Log("SDL_GetTextureSize failed: %s", SDL_GetError());
+    }
+
     return true;
 }
 
@@ -20,30 +31,39 @@ void Paddle::update(float dt, int logicalWidth) {
 
     x += move * dt;
 
-    // wrap-around
-    if (x < -size)              x = logicalWidth - size;
-    else if (x > logicalWidth)  x = 0.0f;
+    // wrap-around using width
+    if (x < -width)              x = logicalWidth - width;
+    else if (x > logicalWidth)   x = 0.0f;
 }
 
 void Paddle::render(SDL_Renderer* renderer, int logicalWidth) const {
     if (!texture) return;
 
-    SDL_FRect src{ 0.0f, 0.0f, size, size };
-    SDL_FRect dst{ x, y, size, size };
+    SDL_FRect src{ 0.0f, 0.0f, width, height };
+    SDL_FRect dst{ x, y,        width, height };
 
     SDL_RenderTexture(renderer, texture, &src, &dst);
 
     // wrap-around drawing on both sides
-    if (x < size) {
+    if (x < width) {
         SDL_FRect wrap = dst;
         wrap.x = x + logicalWidth;
         SDL_RenderTexture(renderer, texture, &src, &wrap);
     }
-    else if (x + size > logicalWidth - size) {
+    else if (x + width > logicalWidth - width) {
         SDL_FRect wrap = dst;
         wrap.x = x - logicalWidth;
         SDL_RenderTexture(renderer, texture, &src, &wrap);
     }
+}
+
+SDL_FRect Paddle::getRect() const {
+    SDL_FRect r;
+    r.x = x;
+    r.y = y;
+    r.w = width;
+    r.h = height;
+    return r;
 }
 
 void Paddle::destroy() {

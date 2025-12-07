@@ -4,6 +4,9 @@
 #include "SDLApp.h"
 #include "Paddle.h"
 #include "Menu.h"
+#include "GameStates.h"
+#include "BallLogic.h"
+#include "Ball.h"
 
 // forward declare enum, it is defined in GameStates.h
 enum class GameStateID;

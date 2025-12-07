@@ -18,7 +18,7 @@ void Menu::render(SDL_Renderer *renderer,
     // Top-left coordinate so that the window is centered
     ImVec2 pos(
         (logicalWidth - menuWidth) * 0.5f,
-        (logicalHeight - menuHeight) * 0.5f);
+        (logicalHeight - menuHeight) * 1.5f);
 
     ImGui::SetNextWindowSize(ImVec2(menuWidth, menuHeight), ImGuiCond_Always);
     ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
@@ -28,12 +28,12 @@ void Menu::render(SDL_Renderer *renderer,
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.02f, 0.02f, 0.06f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.f));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.90f, 0.30f, 0.30f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.00f, 0.45f, 0.45f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.80f, 0.20f, 0.20f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.95f, 0.8f, 1.0f));
-
+    
     ImGuiWindowFlags flags =
         ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize |
@@ -47,7 +47,7 @@ void Menu::render(SDL_Renderer *renderer,
 
         // Title
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("BREAKOUT").x) * 0.5f);
-        ImGui::Text("BREAKOUT");
+        
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -59,7 +59,7 @@ void Menu::render(SDL_Renderer *renderer,
         ImVec2 buttonSize(220.0f, 40.0f);
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - buttonSize.x) * 0.5f);
-        if (ImGui::Button("Start Game", buttonSize))
+        if (ImGui::Button("Start Game [ENTER]", buttonSize))
         {
             startGame = true;
         }
@@ -67,7 +67,7 @@ void Menu::render(SDL_Renderer *renderer,
         ImGui::Spacing();
 
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x - buttonSize.x) * 0.5f);
-        if (ImGui::Button("Quit Game", buttonSize))
+        if (ImGui::Button("Quit Game [ESC]", buttonSize))
         {
             quit = true;
         }
@@ -77,8 +77,8 @@ void Menu::render(SDL_Renderer *renderer,
         ImGui::Spacing();
 
         ImGui::Text("Options:");
-        ImGui::BulletText("Sound:  %s", soundOn ? "ON" : "OFF");
-        ImGui::BulletText("Music:  %s", musicOn ? "ON" : "OFF");
+        ImGui::BulletText("Sound [O]:  %s", soundOn ? "ON" : "OFF");
+        ImGui::BulletText("Music [M]:  %s", musicOn ? "ON" : "OFF");
     }
     ImGui::End();
 
