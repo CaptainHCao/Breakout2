@@ -13,6 +13,14 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 
+static bool overlaps(const SDL_FRect& a, const SDL_FRect& b)
+{
+    return a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y;
+}
+
 Game::Game()
     : currentState(GameStateID::Menu)
 {
@@ -194,6 +202,27 @@ int Game::run()
             ball.bounceWalls((float)app.logicalWidth, (float)app.logicalHeight);
             ball.bouncePaddle(paddleRect);
             ball.checkOutOfBounds((float)app.logicalHeight, paddleRect);
+
+
+			// check ball-brick collisions
+                // --- Ball–brick collisions ---
+            SDL_FRect ballRect = ball.getRect();
+
+            for (auto& brick : bricks) {
+                if (!brick.alive) continue;
+
+                if (overlaps(ballRect, brick.rect)) {
+                    // remove the brick
+                    brick.alive = false;
+
+                    // simple bounce: flip vertical velocity
+                    ball.bounceVertical();
+
+                    // handle only one brick per frame
+                    break;
+                }
+            }
+
         }
 
         // --- Rendering ---

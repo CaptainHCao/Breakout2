@@ -15,6 +15,9 @@ public:
     bool isAttached() const { return attached; }          
     const SDL_FRect& getRect() const { return rect; }
 
+    void bounceVertical();
+
+
 private:
     SDL_FRect rect;
     float vx, vy;

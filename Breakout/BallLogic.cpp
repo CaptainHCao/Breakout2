@@ -16,6 +16,10 @@ void Ball::update(float dt) {
     }
 }
 
+void Ball::bounceVertical() {
+    vy = -vy;
+}
+
 void Ball::attachToPaddle(const SDL_FRect& paddle) {
     // Center the ball horizontally on paddle
     rect.x = paddle.x + paddle.w / 2.0f - rect.w / 2.0f;
