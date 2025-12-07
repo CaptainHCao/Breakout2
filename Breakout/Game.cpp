@@ -28,6 +28,10 @@ Game::Game()
 
 int Game::run()
 {
+    int  highscore = 0;
+    int lives = 3;
+	int score = 0;
+    
     // --- Init SDL/window/renderer ---
     app.width = 1600;
     app.height = 900;
@@ -92,17 +96,14 @@ int Game::run()
         b.texture = brickTexture;
     }
 
-    int lives = 3;
-  
-
 
     // --- Game / menu state ---
     enum class GameState { Menu, Playing };
-    GameState gameState = GameState::Menu;   // ? STARTUP SCREEN FIRST
+    GameState gameState = GameState::Menu;   // STARTUP SCREEN FIRST
 
     bool soundOn = true;
     bool musicOn = true;
-    int  highscore = 0;
+    
 
     Menu menu;
 
@@ -178,19 +179,35 @@ int Game::run()
             io.DisplayFramebufferScale = ImVec2(scaleX, scaleY);
         }
 
-        // DEBUG OVERLAY: always show current state in a small ImGui window
-        {
-            ImGui::Begin("DEBUG STATE");
-            ImGui::Text("State: %s",
-                (gameState == GameState::Menu) ? "MENU (startup)" : "PLAYING");
-            ImGui::End();
-        }
+        //DEBUG OVERLAY: always show current state in a small ImGui window
+        //{
+        //    ImGui::Begin("DEBUG STATE");
+        //    ImGui::Text("State: %s",
+        //        (gameState == GameState::Menu) ? "MENU (startup)" : "PLAYING");
+        //    ImGui::End();
+        //}
 
         // --- Game update (only when playing) ---
         if (gameState == GameState::Playing)
         {
-            paddle.update(deltaTime, app.logicalWidth);
+            ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+            ImGui::SetNextWindowBgAlpha(0.35f); // slightly transparent
 
+            ImGui::Begin("HUD",
+                nullptr,
+                ImGuiWindowFlags_NoDecoration |
+                ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoFocusOnAppearing |
+                ImGuiWindowFlags_NoNav);
+
+            ImGui::Text("Lives: %d", lives);
+            ImGui::Text("Score: %d", score);
+			ImGui::Text("Highscore: %d", highscore);
+
+            ImGui::End();
+
+            paddle.update(deltaTime, app.logicalWidth);
             SDL_FRect paddleRect = paddle.getRect();
 
             // keep ball attached to paddle if not launched yet
@@ -201,11 +218,28 @@ int Game::run()
             ball.update(deltaTime);
             ball.bounceWalls((float)app.logicalWidth, (float)app.logicalHeight);
             ball.bouncePaddle(paddleRect);
-            ball.checkOutOfBounds((float)app.logicalHeight, paddleRect);
+            if (ball.checkOutOfBounds((float)app.logicalHeight, paddleRect)) {
+                lives--;
 
+                if (lives <= 0) {
+
+                    // Update highscore
+                    if (score > highscore) {
+                        highscore = score;
+					}
+                    // out of lives -> go back to menu (and maybe reset)
+                    SDL_Log("DEBUG: no lives left -> back to MENU");
+                    gameState = GameState::Menu;
+
+                    // simple reset: restore lives & score
+                    lives = 3;
+                    score = 0;
+
+                    // (optional) respawn bricks here using spawnBricks again
+                }
+			}
 
 			// check ball-brick collisions
-                // --- Ball–brick collisions ---
             SDL_FRect ballRect = ball.getRect();
 
             for (auto& brick : bricks) {
@@ -214,10 +248,9 @@ int Game::run()
                 if (overlaps(ballRect, brick.rect)) {
                     // remove the brick
                     brick.alive = false;
-
+                    score += 10;
                     // simple bounce: flip vertical velocity
                     ball.bounceVertical();
-
                     // handle only one brick per frame
                     break;
                 }

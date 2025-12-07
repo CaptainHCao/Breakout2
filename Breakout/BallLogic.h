@@ -9,7 +9,7 @@ public:
     void launch();
     void bounceWalls(float screenW, float screenH);
     void bouncePaddle(const SDL_FRect& paddle);
-    void checkOutOfBounds(float screenH, const SDL_FRect& paddle);
+    bool checkOutOfBounds(float screenH, const SDL_FRect& paddle);
     void reset(float paddleX, float paddleY, float paddleW);
 
     bool isAttached() const { return attached; }          

@@ -49,14 +49,17 @@ void Ball::bounceWalls(float screenW, float screenH) {
 
     if (rect.y < 0) { rect.y = 0; vy = -vy; }
 }
-void Ball::checkOutOfBounds(float screenH, const SDL_FRect& paddle) {
+bool Ball::checkOutOfBounds(float screenH, const SDL_FRect& paddle) {
     if (rect.y > screenH) {   // ball fell below screen
-        attached = true;      // reattach to paddle
+        attached = true;
         vx = 0;
         vy = 0;
         attachToPaddle(paddle);  // position it on the paddle
+        return true;             // <- life lost
     }
+    return false;                // no life lost
 }
+
 void Ball::reset(float paddleX, float paddleY, float paddleW) {
     attached = true;
     rect.x = paddleX + paddleW / 2 - rect.w / 2;
