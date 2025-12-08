@@ -167,6 +167,14 @@ int Game::run()
                     else if (event.key.key == SDLK_SPACE) {
                         ball.launch();  
                     }
+                    else if (event.key.key == SDLK_M) {
+                        musicOn = !musicOn;
+                        SDL_Log("Music toggled %s", musicOn ? "ON" : "OFF");
+                    }
+                    else if (event.key.key == SDLK_O) {
+                        soundOn = !soundOn;
+                        SDL_Log("Sound toggled %s", soundOn ? "ON" : "OFF");
+                    }
                 }
             }
         }
@@ -317,7 +325,9 @@ int Game::run()
             else if (startGame) {
                 SDL_Log("DEBUG: startGame = true -> switch to PLAYING");
                 gameState = GameState::Playing;
-				paddle.setPosition(0.0f, 280.0f);
+                float startX = (app.logicalWidth - paddle.getRect().w) * 0.5f;
+                float startY = app.logicalHeight - 40;  
+                paddle.setPosition(startX, startY);
                 SDL_FRect pRect = paddle.getRect();
                 ball.attachToPaddle(pRect);
             }
