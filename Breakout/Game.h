@@ -7,6 +7,7 @@
 #include "GameStates.h"
 #include "BallLogic.h"
 #include "Ball.h"
+#include "Audio.h" 
 
 // forward declare enum, it is defined in GameStates.h
 enum class GameStateID;
@@ -31,4 +32,8 @@ public:
     Game();                      // ctor sets initial state
     int  run();
     void changeState(GameStateID newState);
+
+private:
+    MusicPlayer music;          // background music
+    SoundEffect brickBreakSfx;  // sound when a brick breaks
 };

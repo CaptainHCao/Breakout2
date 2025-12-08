@@ -15,11 +15,14 @@
 #include "Audio.h"
 #include <SDL3/SDL.h>
 
+
 MusicPlayer::MusicPlayer() {}
 MusicPlayer::~MusicPlayer()
 {
     shutdown();
 }
+
+// ====================== Music Player ======================
 
 bool MusicPlayer::init(const char* path)
 {
@@ -108,4 +111,82 @@ void MusicPlayer::shutdown()
     }
 
     initialized = false;
+}
+
+// ====================== SoundEffect ======================
+bool SoundEffect::load(const char* path)
+{
+    if (!SDL_LoadWAV(path, &spec, &buffer, &length))
+    {
+        SDL_Log("SFX load failed '%s': %s", path, SDL_GetError());
+        return false;
+    }
+
+    device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
+    if (!device)
+    {
+        SDL_Log("Could not open audio device for SFX: %s", SDL_GetError());
+        SDL_free(buffer);
+        buffer = nullptr;
+        return false;
+    }
+
+    stream = SDL_CreateAudioStream(&spec, &spec);
+    if (!stream)
+    {
+        SDL_Log("Could not create SFX stream: %s", SDL_GetError());
+        SDL_CloseAudioDevice(device);
+        device = 0;
+        SDL_free(buffer);
+        buffer = nullptr;
+        return false;
+    }
+
+    if (!SDL_BindAudioStream(device, stream))
+    {
+        SDL_Log("Could not bind SFX stream: %s", SDL_GetError());
+        SDL_DestroyAudioStream(stream);
+        stream = nullptr;
+        SDL_CloseAudioDevice(device);
+        device = 0;
+        SDL_free(buffer);
+        buffer = nullptr;
+        return false;
+    }
+
+    return true;
+}
+
+void SoundEffect::play()
+{
+    if (!stream || !device || !buffer || length == 0)
+        return;
+
+    // Queue one instance of the sound; device is already bound
+    SDL_PutAudioStreamData(stream, buffer, (int)length);
+    SDL_ResumeAudioDevice(device);
+}
+
+void SoundEffect::shutdown()
+{
+    if (stream)
+    {
+        SDL_UnbindAudioStream(stream);
+        SDL_DestroyAudioStream(stream);
+        stream = nullptr;
+    }
+
+    if (device)
+    {
+        SDL_CloseAudioDevice(device);
+        device = 0;
+    }
+
+    if (buffer)
+    {
+        SDL_free(buffer);
+        buffer = nullptr;
+    }
+
+    length = 0;
 }

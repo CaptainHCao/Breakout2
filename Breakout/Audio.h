@@ -1,6 +1,25 @@
 #pragma once
 #include <SDL3/SDL_audio.h>
 
+class SoundEffect
+{
+public:
+    SoundEffect() = default;
+    ~SoundEffect() { shutdown(); }
+
+    bool load(const char* path);
+    void play();
+    void shutdown();
+
+private:
+    SDL_AudioSpec spec{};
+    Uint8* buffer = nullptr;
+    Uint32 length = 0;
+
+    SDL_AudioDeviceID device = 0;
+    SDL_AudioStream* stream = nullptr;
+};
+
 class MusicPlayer
 {
 public:

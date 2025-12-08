@@ -44,6 +44,10 @@ int Game::run()
     if (!app.music.init("assets/funarcade.wav"))
         SDL_Log("Music init failed!");
 
+    if (!brickBreakSfx.load("assets/brick_break.wav")) {
+        SDL_Log("Brick SFX init failed!");
+    }
+
     // --- Init ImGui ---
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -249,6 +253,10 @@ int Game::run()
                     // remove the brick
                     brick.alive = false;
                     score += 10;
+
+                    if (soundOn) {
+                        brickBreakSfx.play();
+                    }
                     // simple bounce: flip vertical velocity
                     ball.bounceVertical();
                     // handle only one brick per frame
@@ -336,6 +344,7 @@ int Game::run()
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+    brickBreakSfx.shutdown();
 
     app.shutdown();
     return 0;
