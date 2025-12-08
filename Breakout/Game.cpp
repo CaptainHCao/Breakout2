@@ -325,6 +325,7 @@ int Game::run()
             else if (startGame) {
                 SDL_Log("DEBUG: startGame = true -> switch to PLAYING");
                 gameState = GameState::Playing;
+				// paddle spawns in the middle bottom
                 float startX = (app.logicalWidth - paddle.getRect().w) * 0.5f;
                 float startY = app.logicalHeight - 40;  
                 paddle.setPosition(startX, startY);

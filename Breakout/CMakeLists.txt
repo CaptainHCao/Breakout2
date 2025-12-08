@@ -8,7 +8,7 @@ add_executable(Breakout
     Menu.cpp
     SDLApp.cpp
     Paddle.cpp
-    Ball.cpp
+    
     Brick.cpp
     Level.cpp
     Audio.cpp      
