@@ -3,11 +3,12 @@
 project("Breakout")
 
 # -------------------------------------------------------------------
-# SDL3 + SDL3_image manual configuration (NO find_package)
+# SDL3 + SDL3_image manual configuration 
 # -------------------------------------------------------------------
-# Adjust these if your SDKs live somewhere else.
-set(SDL3_ROOT       "C:/Users/Maria/SDKs/SDL3-3.2.28")
-set(SDL3_IMAGE_ROOT "C:/Users/Maria/SDKs/SDL3_image-3.2.4")
+# Using paths relative to the project root
+set(SDL3_ROOT       "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL3-3.2.28")
+set(SDL3_IMAGE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL3_image-3.2.4")
+
 
 # SDL3 imported interface target
 add_library(SDL3::SDL3 INTERFACE IMPORTED)
@@ -23,10 +24,6 @@ set_target_properties(SDL3_image::SDL3_image PROPERTIES
     INTERFACE_LINK_LIBRARIES      "${SDL3_IMAGE_ROOT}/lib/x64/SDL3_image.lib"
 )
 
-# If your libs are actually in lib/x64, then use:
-#   "${SDL3_ROOT}/lib/x64/SDL3.lib"
-#   "${SDL3_IMAGE_ROOT}/lib/x64/SDL3_image.lib"
-# instead.
 
 # -------------------------------------------------------------------
 # ImGui library
@@ -46,14 +43,10 @@ target_include_directories(imgui PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
 )
 
-# Important: link imgui to SDL3 so the backend can see SDL3/SDL.h
+# link imgui to SDL3 so the backend can see SDL3/SDL.h
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 # -------------------------------------------------------------------
 # Game sub-project
 # -------------------------------------------------------------------
 add_subdirectory("Breakout")
-
-add_subdirectory("main.cpp")
-
-add_subdirectory("main")

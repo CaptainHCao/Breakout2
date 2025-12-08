@@ -1,3 +1,17 @@
+// Audio.cpp
+// Simple music playback helper built on SDL3's audio API.
+//
+// This file implements the MusicPlayer class, which:
+//
+// - Loads a WAV file from disk using SDL_LoadWAV.
+// - Opens the default playback device (SDL_OpenAudioDevice).
+// - Creates an SDL audio stream and binds it to the device.
+// - Queues the loaded WAV data into the stream and starts playback.
+// - On update(), checks if the stream ran out of data and re-queues it,
+//   effectively looping the track.
+// - Allows enabling/disabling playback via setEnabled(bool).
+// - Cleans up device, stream, and audio buffer in shutdown() / destructor.
+
 #include "Audio.h"
 #include <SDL3/SDL.h>
 

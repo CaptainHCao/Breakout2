@@ -6,7 +6,7 @@
       "displayName": "x64 Debug (User)",
       "inherits": "x64-debug",
       "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "C:\\Users\\Maria\\SDKs\\SDL3-3.2.28;C:\\Users\\Maria\\SDKs\\SDL3_image-3.2.4;C:\\Users\\Maria\\SDKs\\imgui"
+        "CMAKE_PREFIX_PATH": "${sourceDir}/external/SDL3-3.2.28;${sourceDir}/external/SDL3_image-3.2.4"
       }
     }
   ]
