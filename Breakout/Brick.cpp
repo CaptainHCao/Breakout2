@@ -1,4 +1,5 @@
 //defines what a Brick is
+
 #include "Brick.h"
 #include <SDL3_image/SDL_image.h>
 

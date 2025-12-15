@@ -25,7 +25,6 @@ Game objects & logic
 	Paddle.h / Paddle.cpp
 	Ball.h / Ball.cpp
 	Brick.h / Brick.cpp
-	BallLogic.h / BallLogic.cpp
 	BrickLogic.h / BrickLogic.cpp
 	Level.h
 

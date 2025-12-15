@@ -15,6 +15,9 @@ public:
 
     SDL_FRect getRect() const;
 
+    void makeFaster(float factor);
+    void makeBigger(float factor);
+
 private:
     float x = 0.0f;
     float y = 280.0f;

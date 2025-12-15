@@ -72,3 +72,26 @@ void Paddle::destroy() {
         texture = nullptr;
     }
 }
+
+void Paddle::makeFaster(float factor)
+{
+    speed *= factor;
+
+    // optional safety clamp
+    if (speed > 600.0f)
+        speed = 600.0f;
+}
+
+void Paddle::makeBigger(float factor)
+{
+    float centerX = x + width * 0.5f;
+
+    width *= factor;
+
+    // keep paddle centered
+    x = centerX - width * 0.5f;
+
+    // optional clamp so it never gets ridiculous
+    if (width > 200.0f)
+        width = 200.0f;
+}

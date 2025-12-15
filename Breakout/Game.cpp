@@ -2,16 +2,19 @@
 #include "Menu.h"
 #include "SDLApp.h"
 #include "GameStates.h"
-
 #include "Paddle.h"
 #include "Brick.h"
 #include "BrickLogic.h"
-#include "BallLogic.h"
+#include "Ball.h"
+
+#include "DebugMenu.h"
 
 #include <SDL3_image/SDL_image.h>
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+
+#include <algorithm>
 
 static bool overlaps(const SDL_FRect& a, const SDL_FRect& b)
 {
@@ -86,7 +89,7 @@ int Game::run()
     const int margin = 10;   // distance from edges
     const int padding = 4;    // gap between bricks
 
-    std::vector<Brick> bricks = spawnBricks(
+    std::vector<Brick> bricks = BrickLogic::spawnBricks(
         app.logicalWidth,
         app.logicalHeight,
         brickW,
@@ -101,13 +104,16 @@ int Game::run()
     }
 
 
+    std::vector<UpgradePickup> pickups;
+
+
     // --- Game / menu state ---
     enum class GameState { Menu, Playing };
     GameState gameState = GameState::Menu;   // STARTUP SCREEN FIRST
 
     bool soundOn = true;
     bool musicOn = true;
-    
+    bool showDebugMenu = true;
 
     Menu menu;
 
@@ -134,6 +140,21 @@ int Game::run()
         SDL_Event event{ 0 };
         while (SDL_PollEvent(&event))
         {
+            if (event.type == SDL_EVENT_MOUSE_MOTION)
+            {
+                float rx, ry;
+                SDL_RenderCoordinatesFromWindow(app.renderer, event.motion.x, event.motion.y, &rx, &ry);
+                event.motion.x = rx;
+                event.motion.y = ry;
+            }
+            else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP)
+            {
+                float rx, ry;
+                SDL_RenderCoordinatesFromWindow(app.renderer, event.button.x, event.button.y, &rx, &ry);
+                event.button.x = rx;
+                event.button.y = ry;
+            }
+
             ImGui_ImplSDL3_ProcessEvent(&event);
 
             if (event.type == SDL_EVENT_QUIT) {
@@ -175,6 +196,9 @@ int Game::run()
                         soundOn = !soundOn;
                         SDL_Log("Sound toggled %s", soundOn ? "ON" : "OFF");
                     }
+                    else if (event.key.key == SDLK_F1) { 
+                        showDebugMenu = !showDebugMenu; 
+                    }
                 }
             }
         }
@@ -184,20 +208,14 @@ int Game::run()
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
+        renderDebugMenu(showDebugMenu, paddle, ball);
+
         {
             float scaleX, scaleY;
             SDL_GetRenderScale(app.renderer, &scaleX, &scaleY);
             ImGuiIO& io = ImGui::GetIO();
             io.DisplayFramebufferScale = ImVec2(scaleX, scaleY);
         }
-
-        //DEBUG OVERLAY: always show current state in a small ImGui window
-        //{
-        //    ImGui::Begin("DEBUG STATE");
-        //    ImGui::Text("State: %s",
-        //        (gameState == GameState::Menu) ? "MENU (startup)" : "PLAYING");
-        //    ImGui::End();
-        //}
 
         // --- Game update (only when playing) ---
         if (gameState == GameState::Playing)
@@ -221,6 +239,50 @@ int Game::run()
 
             paddle.update(deltaTime, app.logicalWidth);
             SDL_FRect paddleRect = paddle.getRect();
+
+            // --- update + collect falling upgrades ---
+            for (auto& p : pickups)
+            {
+                if (!p.alive) continue;
+
+                p.update(deltaTime);
+
+                // collected by paddle
+                if (overlaps(p.rect, paddleRect))
+                {
+                    switch (p.type)
+                    {
+                    case UpgradeType::BiggerBall:
+                        ball.makeBigger(1.25f);
+                        break;
+
+                    case UpgradeType::StrongerBall:
+                        ball.makeStrong(5);
+                        break;
+
+                    case UpgradeType::BiggerPaddle:
+                        paddle.makeBigger(1.25f);   // add this in Paddle
+                        break;
+
+                    case UpgradeType::FasterPaddle:
+                        paddle.makeFaster(1.20f);   // add this in Paddle
+                        break;
+                    }
+
+                    p.alive = false;
+                }
+
+                // fell off screen
+                if (p.rect.y > app.logicalHeight) p.alive = false;
+            }
+
+            // cleanup dead pickups
+            pickups.erase(
+                std::remove_if(pickups.begin(), pickups.end(),
+                    [](const UpgradePickup& p) { return !p.alive; }),
+                pickups.end()
+            );
+
 
             // keep ball attached to paddle if not launched yet
             if (ball.isAttached()) {
@@ -261,6 +323,19 @@ int Game::run()
                     // remove the brick
                     brick.alive = false;
                     score += 10;
+
+                    if (brick.hasUpgrade)
+                    {
+                        UpgradePickup p;
+                        p.type = brick.upgradeType;
+                        p.rect = SDL_FRect{
+                            brick.rect.x + brick.rect.w * 0.25f,
+                            brick.rect.y + brick.rect.h * 0.25f,
+                            brick.rect.w * 0.5f,
+                            brick.rect.h * 0.5f
+                        };
+                        pickups.push_back(p);
+                    }
 
                     if (soundOn) {
                         brickBreakSfx.play();
@@ -306,6 +381,10 @@ int Game::run()
         {
             for (const auto& brick : bricks) {
                 brick.render(app.renderer);
+            }
+
+            for (const auto& p : pickups) {
+                p.render(app.renderer);
             }
 
             paddle.render(app.renderer, app.logicalWidth);

@@ -1,6 +1,7 @@
 // Brick.h
 #pragma once
 #include <SDL3/SDL.h>
+#include "UpgradeTypes.h"
 
 
 struct Brick {
@@ -8,6 +9,8 @@ struct Brick {
     bool alive = true;
     SDL_Texture* texture = nullptr;
 
+	bool hasUpgrade;
+    UpgradeType upgradeType;
 
     bool loadTexture(SDL_Renderer* renderer, const char* path);
     void render(SDL_Renderer* renderer) const;

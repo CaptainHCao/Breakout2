@@ -5,7 +5,7 @@
 #include "Paddle.h"
 #include "Menu.h"
 #include "GameStates.h"
-#include "BallLogic.h"
+#include "Ball.h"
 #include "Audio.h" 
 
 // forward declare enum, it is defined in GameStates.h

@@ -10,10 +10,10 @@ add_executable(Breakout
     Brick.cpp
     Level.cpp
     Audio.cpp      
-    BallLogic.cpp
+    
     GameStates.cpp
     BrickLogic.cpp
-)
+ "UpgradeTypes.h" "UpgradePickup.h" "Ball.h" "Ball.cpp" "DebugMenu.h" "DebugMenu.cpp")
 
 add_custom_command(TARGET Breakout POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
