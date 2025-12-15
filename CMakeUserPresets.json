@@ -4,10 +4,7 @@
     {
       "name": "x64-debug-user",
       "displayName": "x64 Debug (User)",
-      "inherits": "x64-debug",
-      "cacheVariables": {
-        "CMAKE_PREFIX_PATH": "${sourceDir}/external/SDL3-3.2.28;${sourceDir}/external/SDL3_image-3.2.4"
-      }
+      "inherits": "x64-debug"
     }
   ]
 }

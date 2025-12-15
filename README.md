@@ -1,3 +1,12 @@
+
+to get sdl
+
+git clone https://github.com/libsdl-org/SDL.git vendored/SDL
+
+to get imgui
+
+git clone https://github.com/libsdl-org/SDL_image.git vendored/SDL_image
+
 # Breakout
 
 High-level modules

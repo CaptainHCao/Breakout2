@@ -1,52 +1,32 @@
 ﻿cmake_minimum_required(VERSION 3.20)
+project(Breakout)
 
-project("Breakout")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
-# -------------------------------------------------------------------
-# SDL3 + SDL3_image manual configuration 
-# -------------------------------------------------------------------
-# Using paths relative to the project root
-set(SDL3_ROOT       "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL3-3.2.28")
-set(SDL3_IMAGE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL3_image-3.2.4")
+set(SDLIMAGE_VENDORED OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_JXL  OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_TIF  OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
 
 
-# SDL3 imported interface target
-add_library(SDL3::SDL3 INTERFACE IMPORTED)
-set_target_properties(SDL3::SDL3 PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${SDL3_ROOT}/include"
-    INTERFACE_LINK_LIBRARIES      "${SDL3_ROOT}/lib/x64/SDL3.lib"
+add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
+add_subdirectory(vendored/SDL_image EXCLUDE_FROM_ALL)
+
+add_library(imgui STATIC
+  external/imgui/imgui.cpp
+  external/imgui/imgui_draw.cpp
+  external/imgui/imgui_tables.cpp
+  external/imgui/imgui_widgets.cpp
+  external/imgui/imgui_demo.cpp
+  external/imgui/backends/imgui_impl_sdl3.cpp
+  external/imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
-
-# SDL3_image imported interface target
-add_library(SDL3_image::SDL3_image INTERFACE IMPORTED)
-set_target_properties(SDL3_image::SDL3_image PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${SDL3_IMAGE_ROOT}/include"
-    INTERFACE_LINK_LIBRARIES      "${SDL3_IMAGE_ROOT}/lib/x64/SDL3_image.lib"
-)
-
-
-# -------------------------------------------------------------------
-# ImGui library
-# -------------------------------------------------------------------
-add_library(imgui
-    external/imgui/imgui.cpp
-    external/imgui/imgui_draw.cpp
-    external/imgui/imgui_tables.cpp
-    external/imgui/imgui_widgets.cpp
-    external/imgui/imgui_demo.cpp
-    external/imgui/backends/imgui_impl_sdl3.cpp
-    external/imgui/backends/imgui_impl_sdlrenderer3.cpp
-)
-
 target_include_directories(imgui PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
 )
-
-# link imgui to SDL3 so the backend can see SDL3/SDL.h
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
-# -------------------------------------------------------------------
-# Game sub-project
-# -------------------------------------------------------------------
-add_subdirectory("Breakout")
+add_subdirectory(Breakout)

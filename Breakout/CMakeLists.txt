@@ -1,6 +1,4 @@
 ﻿# Add source to this project's executable.
-find_package(SDL3 REQUIRED)
-find_package(SDL3_image REQUIRED)
 
 add_executable(Breakout
     main.cpp
@@ -17,6 +15,11 @@ add_executable(Breakout
     BrickLogic.cpp
 )
 
+add_custom_command(TARGET Breakout POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/assets
+          $<TARGET_FILE_DIR:Breakout>/assets
+)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Breakout PROPERTY CXX_STANDARD 20)
