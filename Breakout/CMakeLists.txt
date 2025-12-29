@@ -31,3 +31,9 @@ target_link_libraries(Breakout PRIVATE
     SDL3_image::SDL3_image
     imgui          
 )
+
+add_custom_command(TARGET Breakout POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/Breakout/Maps.txt
+        $<TARGET_FILE_DIR:Breakout>
+)

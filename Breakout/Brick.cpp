@@ -1,5 +1,3 @@
-//defines what a Brick is
-
 #include "Brick.h"
 #include <SDL3_image/SDL_image.h>
 
@@ -14,24 +12,55 @@ bool Brick::loadTexture(SDL_Renderer* renderer, const char* path)
     return true;
 }
 
+void Brick::hit()
+{
+    if (!alive)
+        return;
+
+    state++;
+
+    if (state > maxState) {
+        alive = false;
+    }
+}
+
+
 void Brick::render(SDL_Renderer* renderer) const
 {
-    if (!alive) return;
+    if (!alive)
+        return;
 
     if (texture) {
-        SDL_RenderTexture(renderer, texture, nullptr, &rect);
+        float texW = 0.0f, texH = 0.0f;
+        SDL_GetTextureSize(texture, &texW, &texH);
+
+        constexpr int SpriteStates = 3; // total frames in sprite sheet
+
+        float frameWidth = texW / SpriteStates;
+
+        // Clamp visual state so weak bricks still show last valid frame
+        int visualState = SDL_clamp(state, 1, maxState);
+        visualState = SDL_clamp(visualState, 1, SpriteStates);
+
+        SDL_FRect src{
+            frameWidth * (visualState - 1),
+            0.0f,
+            frameWidth,
+            texH
+        };
+
+        SDL_RenderTexture(renderer, texture, &src, &rect);
+
         return;
     }
 
-    // solid brick
+    // Debug fallback
     SDL_SetRenderDrawColor(renderer, 200, 60, 60, 255);
     SDL_RenderFillRect(renderer, &rect);
 
-    // outline
     SDL_SetRenderDrawColor(renderer, 10, 10, 10, 255);
     SDL_RenderRect(renderer, &rect);
 }
-
 
 void Brick::destroy()
 {
@@ -40,4 +69,3 @@ void Brick::destroy()
         texture = nullptr;
     }
 }
-

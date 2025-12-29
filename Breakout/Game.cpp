@@ -1,4 +1,4 @@
-#include "Game.h"
+﻿#include "Game.h"
 #include "Menu.h"
 #include "SDLApp.h"
 #include "GameStates.h"
@@ -6,6 +6,7 @@
 #include "Brick.h"
 #include "BrickLogic.h"
 #include "Ball.h"
+#include "UpgradePickup.h"  
 
 #include "DebugMenu.h"
 
@@ -78,7 +79,7 @@ int Game::run()
     SDL_SetTextureScaleMode(ballTexture, SDL_SCALEMODE_NEAREST);
     Ball ball(8.0f);
 
-    SDL_Texture* brickTexture = IMG_LoadTexture(app.renderer, "assets/paddle.png");
+    SDL_Texture* brickTexture = IMG_LoadTexture(app.renderer, "assets/bricks.png");
     if (!brickTexture) {
         SDL_Log("Failed to load brick texture: %s", SDL_GetError());
     }
@@ -89,26 +90,60 @@ int Game::run()
     const int margin = 10;   // distance from edges
     const int padding = 4;    // gap between bricks
 
-    std::vector<Brick> bricks = BrickLogic::spawnBricks(
-        app.logicalWidth,
-        app.logicalHeight,
-        brickW,
-        brickH,
-        margin,
-        padding
-    );
-
-    // assign texture to each brick
-    for (auto& b : bricks) {
-        b.texture = brickTexture;
+    std::vector<Brick> bricks;
+    try {
+        bricks = BrickLogic::spawnBricks(
+            app.logicalWidth,
+            app.logicalHeight,
+            brickW,
+            brickH,
+            margin,
+            padding
+        );
+    } catch (const std::exception& e) {
+        SDL_Log("spawnBricks failed: %s", e.what());
+        bricks.clear();
     }
 
-
+    int currentLevel = 0;
     std::vector<UpgradePickup> pickups;
+    int bricksRemaining = 0;
 
+    auto loadLevel = [&](int levelIdx)
+        {
+            pickups.clear();
+
+            bricks.clear();
+            try {
+                bricks = BrickLogic::spawnBricks(
+                    app.logicalWidth, app.logicalHeight,
+                    brickW, brickH,
+                    margin, padding,
+                    "Maps.txt",
+                    levelIdx
+                );
+            }
+            catch (const std::exception& e) {
+                SDL_Log("spawnBricks failed: %s", e.what());
+                bricks.clear();
+            }
+
+            for (auto& b : bricks) b.texture = brickTexture;
+
+            bricksRemaining = 0;
+            for (const auto& b : bricks) if (b.alive) bricksRemaining++;
+
+            // reset paddle + ball for new level
+            float startX = (app.logicalWidth - paddle.getRect().w) * 0.5f;
+            float startY = app.logicalHeight - 40.0f;
+            paddle.setPosition(startX, startY);
+            ball.attachToPaddle(paddle.getRect());
+        };
+
+    loadLevel(currentLevel);
 
     // --- Game / menu state ---
-    enum class GameState { Menu, Playing };
+    enum class GameState { Menu, Playing, Victory };
     GameState gameState = GameState::Menu;   // STARTUP SCREEN FIRST
 
     bool soundOn = true;
@@ -132,7 +167,7 @@ int Game::run()
         const float    deltaTime = (nowTime - prevTime) / 1000.0f;
         prevTime = nowTime;
 
-        // Per�frame menu actions (set by keyboard and ImGui)
+        // Per–frame menu actions (set by keyboard and ImGui)
         bool startGame = false;
         bool quitFromMenu = false;
 
@@ -199,6 +234,8 @@ int Game::run()
                     else if (event.key.key == SDLK_F1) { 
                         showDebugMenu = !showDebugMenu; 
                     }
+
+             
                 }
             }
         }
@@ -320,32 +357,53 @@ int Game::run()
                 if (!brick.alive) continue;
 
                 if (overlaps(ballRect, brick.rect)) {
-                    // remove the brick
-                    brick.alive = false;
-                    score += 10;
+                    brick.hit();
 
-                    if (brick.hasUpgrade)
-                    {
-                        UpgradePickup p;
-                        p.type = brick.upgradeType;
-                        p.rect = SDL_FRect{
-                            brick.rect.x + brick.rect.w * 0.25f,
-                            brick.rect.y + brick.rect.h * 0.25f,
-                            brick.rect.w * 0.5f,
-                            brick.rect.h * 0.5f
-                        };
-                        pickups.push_back(p);
+                    // score only when destroyed
+                    if (!brick.alive) {
+                        score += 10 * brick.maxState;
+                        bricksRemaining--;
+
+                        if (brick.hasUpgrade) {
+                            UpgradePickup p;
+                            p.type = brick.upgradeType;
+                            p.rect = SDL_FRect{
+                                brick.rect.x + brick.rect.w * 0.25f,
+                                brick.rect.y + brick.rect.h * 0.25f,
+                                brick.rect.w * 0.5f,
+                                brick.rect.h * 0.5f
+                            };
+                            pickups.push_back(p);
+                        }
+
+                        if (soundOn) {
+                            brickBreakSfx.play();
+                        }
+
+                        // WIN CHECK ONLY HERE:
+                        if (bricksRemaining <= 0) {
+                            currentLevel++;
+
+                            // Try load next level. If none, go to Victory.
+                            loadLevel(currentLevel);
+                            if (bricksRemaining <= 0 && bricks.empty()) {
+                                gameState = GameState::Victory;
+                                if (score > highscore) highscore = score;
+                            }
+
+                            // We changed state / loaded new bricks; stop processing collisions.
+                            break;
+                        }
                     }
 
-                    if (soundOn) {
-                        brickBreakSfx.play();
-                    }
-                    // simple bounce: flip vertical velocity
+                    // ALWAYS bounce on hit (not only on destroy)
                     ball.bounceVertical();
-                    // handle only one brick per frame
+
+                    // Handle only ONE brick per frame
                     break;
                 }
             }
+
 
         }
 
@@ -393,6 +451,52 @@ int Game::run()
                 SDL_RenderTexture(app.renderer, ballTexture, nullptr, &ballRect);
             }
         }
+        else if (gameState == GameState::Victory)
+        {
+            ImGui::SetNextWindowPos(
+                ImVec2(app.logicalWidth * 0.5f, app.logicalHeight * 0.5f),
+                ImGuiCond_Always,
+                ImVec2(0.5f, 0.5f)
+            );
+
+            ImGui::Begin("Victory!",
+                nullptr,
+                ImGuiWindowFlags_NoDecoration |
+                ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoFocusOnAppearing |
+                ImGuiWindowFlags_NoNav);
+
+            // ---- Centered text ----
+            const char* msg = "Victory!";
+            float windowWidth = ImGui::GetWindowSize().x;
+            float textWidth = ImGui::CalcTextSize(msg).x;
+
+            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+            ImGui::Text("%s", msg);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            // ---- Centered button ----
+            const char* btnLabel = "Back to Menu";
+            ImVec2 btnSize = ImGui::CalcTextSize(btnLabel);
+            btnSize.x += ImGui::GetStyle().FramePadding.x * 2.0f;
+            btnSize.y += ImGui::GetStyle().FramePadding.y * 2.0f;
+
+            ImGui::SetCursorPosX((windowWidth - btnSize.x) * 0.5f);
+            if (ImGui::Button(btnLabel)) {
+                gameState = GameState::Menu;
+                lives = 3;
+                score = 0;
+                currentLevel = 0;
+                loadLevel(currentLevel);
+            }
+
+            ImGui::End();
+        }
+
 
         // --- React to menu actions (keyboard or ImGui) ---
         if (gameState == GameState::Menu)
