@@ -257,9 +257,12 @@ int Game::run()
         // --- Game update (only when playing) ---
         if (gameState == GameState::Playing)
         {
-            ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-            ImGui::SetNextWindowBgAlpha(0.35f); // slightly transparent
+            const float hudHeight = 22.0f;
 
+            ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2((float)app.logicalWidth, hudHeight), ImGuiCond_Always);
+            ImGui::SetNextWindowBgAlpha(0.6f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 4));
             ImGui::Begin("HUD",
                 nullptr,
                 ImGuiWindowFlags_NoDecoration |
@@ -269,10 +272,13 @@ int Game::run()
                 ImGuiWindowFlags_NoNav);
 
             ImGui::Text("Lives: %d", lives);
+            ImGui::SameLine(300);
             ImGui::Text("Score: %d", score);
+            ImGui::SameLine(500);
 			ImGui::Text("Highscore: %d", highscore);
 
             ImGui::End();
+            ImGui::PopStyleVar();
 
             paddle.update(deltaTime, app.logicalWidth);
             SDL_FRect paddleRect = paddle.getRect();

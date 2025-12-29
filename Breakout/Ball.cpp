@@ -39,11 +39,16 @@ void Ball::launch()
 
 void Ball::bounceWalls(float screenW, float screenH)
 {
+    constexpr float HUD_HEIGHT = 24.0f;
+
     if (rect.x <= 0.0f || rect.x + rect.w >= screenW)
         vx = -vx;
 
-    if (rect.y <= 0.0f)
+    if (rect.y <= HUD_HEIGHT)
+    {
+        rect.y = HUD_HEIGHT;    
         vy = -vy;
+    }
 }
 
 void Ball::bouncePaddle(const SDL_FRect& paddle)

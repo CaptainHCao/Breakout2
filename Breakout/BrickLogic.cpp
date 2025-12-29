@@ -125,6 +125,8 @@ std::vector<Brick> BrickLogic::spawnBricks(
     // --- Compute placement (grid to world) ---
     const int totalWidth = cols * brickW + (cols - 1) * padding;
     const int totalHeight = rows * brickH + (rows - 1) * padding;
+    constexpr float HUD_HEIGHT = 24.0f;
+    constexpr float HUD_MARGIN = 6.0f;
 
     // Use margin as top padding; center horizontally if possible
     float startX = (float)margin;
@@ -132,7 +134,7 @@ std::vector<Brick> BrickLogic::spawnBricks(
         startX = (screenWidth - totalWidth) * 0.5f;
     }
 
-    float startY = (float)margin;
+    float startY = HUD_HEIGHT + HUD_MARGIN + margin;
 
     // --- Create bricks ---
     std::vector<Brick> bricks;
