@@ -12,8 +12,8 @@ bool Paddle::load(SDL_Renderer* renderer) {
     // Get the actual texture size 
     float texW = 0.0f, texH = 0.0f;
     if (SDL_GetTextureSize(texture, &texW, &texH)) {
-        width = texW;
-        height = texH;
+        width = texW *2.0f;
+        height = texH * 1.2f;
     }
     else {
         SDL_Log("SDL_GetTextureSize failed: %s", SDL_GetError());

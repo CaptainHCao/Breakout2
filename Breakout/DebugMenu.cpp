@@ -20,6 +20,7 @@ void renderDebugMenu(
     const SDL_FRect bRect = ball.getRect();
 
     ImGui::Text("Paddle width: %.1f", pRect.w);
+    ImGui::Text("Paddle speed: %.1f", paddle.getSpeed());
     ImGui::Text("Ball size: %.1f", bRect.w);
     ImGui::Text("Ball strong: %s", ball.isStrong() ? "YES" : "no");
 

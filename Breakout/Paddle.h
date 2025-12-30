@@ -18,6 +18,9 @@ public:
     void makeFaster(float factor);
     void makeBigger(float factor);
 
+    float getSpeed() const { return speed; }
+    float getWidth() const { return width; }
+
 private:
     float x = 0.0f;
     float y = 280.0f;
