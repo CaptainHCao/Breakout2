@@ -1,0 +1,195 @@
+@startuml
+title Breakout – Compact Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+hide circle
+hide stereotypes
+
+package "Core" {
+  class Game {
+    +Game()
+    +run() : int
+    +changeState(newState : GameStateID) : void
+    +getPickups() : vector<UpgradePickup>&
+    +getPickups() const : const vector<UpgradePickup>&
+
+    +app : SDLApp
+    +paddle : Paddle
+    +menu : Menu
+    +soundOn : bool
+    +musicOn : bool
+    +highscore : int
+    +currentState : GameStateID
+
+    -music : MusicPlayer
+    -brickBreakSfx : SoundEffect
+    -pickupSfx : SoundEffect
+    -m_pickups : vector<UpgradePickup>
+  }
+
+  class SDLApp {
+    +init(title : const char*) : bool
+    +shutdown() : void
+
+    +width : int
+    +height : int
+    +logicalWidth : int
+    +logicalHeight : int
+    +window : SDL_Window*
+    +renderer : SDL_Renderer*
+    +music : MusicPlayer
+  }
+
+  class Menu {
+    +handleEvent(event : SDL_Event, soundOn : bool&, musicOn : bool&, highscore : int&, startGame : bool&, quit : bool&) : void
+    +render(renderer : SDL_Renderer*, soundOn : bool&, musicOn : bool&, highscore : int&, startGame : bool&, quit : bool&, w : int, h : int) : void
+  }
+
+  enum GameStateID {
+    Menu
+    Playing
+    Victory
+  }
+}
+
+package "Entities" {
+  class Paddle {
+    +load(renderer : SDL_Renderer*) : bool
+    +update(dt : float, logicalWidth : int) : void
+    +render(renderer : SDL_Renderer*, logicalWidth : int) : void
+    +destroy() : void
+    +setPosition(newX : float, newY : float) : void
+    +getRect() : SDL_FRect
+    +makeFaster(factor : float) : void
+    +makeBigger(factor : float) : void
+    +getSpeed() : float
+
+    -x : float
+    -y : float
+    -width : float
+    -height : float
+    -speed : float
+    -texture : SDL_Texture*
+  }
+
+  class Ball {
+    +Ball(radius : float)
+    +update(dt : float) : void
+    +getRect() : SDL_FRect
+    +attachToPaddle(paddleRect : SDL_FRect) : void
+    +launch() : void
+    +isAttached() : bool
+    +bounceWalls(w : float, h : float) : void
+    +bouncePaddle(paddleRect : SDL_FRect) : void
+    +bounceVertical() : void
+    +makeBigger(factor : float) : void
+    +makeStrong(hits : int) : void
+    +isStrong() : bool
+    +consumeStrongHit() : void
+    +checkOutOfBounds(h : float, paddleRect : SDL_FRect) : bool
+
+    -rect : SDL_FRect
+    -vx : float
+    -vy : float
+    -attached : bool
+    -strongHitsLeft : int
+  }
+
+  class Brick {
+    +rect : SDL_FRect
+    +alive : bool
+    +state : int
+    +maxState : int
+    +texture : SDL_Texture*
+    +hasUpgrade : bool
+    +upgradeType : UpgradeType
+
+    +hit() : void
+    +render(renderer : SDL_Renderer*) : void
+  }
+
+  class UpgradePickup {
+    +rect : SDL_FRect
+    +type : UpgradeType
+    +alive : bool
+    +vy : float
+    +texture : SDL_Texture*
+
+    +update(dt : float) : void
+    +render(renderer : SDL_Renderer*) : void
+  }
+
+  enum UpgradeType {
+    BiggerBall
+    StrongerBall
+    BiggerPaddle
+    FasterPaddle
+  }
+}
+
+package "Systems" {
+  class BrickLogic <<namespace>> {
+    +spawnBricks(screenW : int, screenH : int, brickW : int, brickH : int, margin : int, padding : int, mapsPath : string, levelIndex : int) : vector<Brick>
+    +handleBallCollision(ball : Ball, bricks : vector<Brick>, pickups : vector<UpgradePickup>) : void
+    +spawnPickupFromBrick(brick : Brick, pickups : vector<UpgradePickup>) : void
+  }
+
+  class SoundEffect {
+    +load(path : const char*) : bool
+    +play() : void
+    +stop() : void
+    +shutdown() : void
+
+    -spec : SDL_AudioSpec
+    -buffer : Uint8*
+    -length : Uint32
+    -device : SDL_AudioDeviceID
+    -stream : SDL_AudioStream*
+  }
+
+  class MusicPlayer {
+    +init(path : const char*) : bool
+    +update() : void
+    +setEnabled(on : bool) : void
+    +shutdown() : void
+
+    -spec : SDL_AudioSpec
+    -buffer : Uint8*
+    -length : Uint32
+    -device : SDL_AudioDeviceID
+    -stream : SDL_AudioStream*
+    -enabled : bool
+    -initialized : bool
+  }
+
+  class DebugMenu <<free function>> {
+    +renderDebugMenu(show : bool&, paddle : Paddle&, ball : Ball&, pickups : vector<UpgradePickup>&) : void
+  }
+}
+
+' --- Key relationships only ---
+Game *-- SDLApp
+Game *-- Menu
+Game *-- Paddle
+Game *-- Ball
+Game o-- "0..*" Brick
+Game o-- "0..*" UpgradePickup
+
+BrickLogic ..> Brick
+BrickLogic ..> Ball
+BrickLogic ..> UpgradePickup
+
+Brick --> UpgradeType
+UpgradePickup --> UpgradeType
+
+SDLApp *-- MusicPlayer
+Game *-- SoundEffect
+Game *-- MusicPlayer
+
+DebugMenu ..> Paddle
+DebugMenu ..> Ball
+DebugMenu ..> UpgradePickup
+
+@enduml
