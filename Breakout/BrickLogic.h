@@ -1,12 +1,10 @@
 #pragma once
 #include <vector>
 #include <string>
+
 #include "Brick.h"
 #include "Ball.h"
-#include "UpgradeTypes.h"
 #include "UpgradePickup.h"
-
-struct UpgradePickup;
 
 namespace BrickLogic {
     std::vector<Brick> spawnBricks(

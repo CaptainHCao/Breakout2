@@ -7,6 +7,8 @@
 #include "GameStates.h"
 #include "Ball.h"
 #include "Audio.h" 
+#include "UpgradePickup.h"
+#include <vector>
 
 // forward declare enum, it is defined in GameStates.h
 enum class GameStateID;
@@ -23,8 +25,12 @@ public:
 
     bool startGame = false;
     bool quitFromMenu = false;
+	bool debug = false;
 
     SDL_Texture* bgTexture = nullptr;
+
+    const std::vector<UpgradePickup>& getPickups() const { return m_pickups; }
+    std::vector<UpgradePickup>& getPickups() { return m_pickups; } // for spawning/removing
 
     GameStateID currentState;    // current state identifier
 
@@ -35,4 +41,7 @@ public:
 private:
     MusicPlayer music;          // background music
     SoundEffect brickBreakSfx;  // sound when a brick breaks
+
+    std::vector<UpgradePickup> m_pickups;
+
 };

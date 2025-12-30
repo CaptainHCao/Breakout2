@@ -4,7 +4,8 @@
 void renderDebugMenu(
     bool& showDebugMenu,
     Paddle& paddle,
-    Ball& ball
+    Ball& ball,
+    std::vector<UpgradePickup>& pickups
 ) {
     if (!showDebugMenu) return;
 
@@ -45,6 +46,14 @@ void renderDebugMenu(
         paddle.makeFaster(1.20f);
         ball.makeBigger(1.25f);
         ball.makeStrong(10);
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Falling pickups: %d", (int)pickups.size());
+    for (int i = 0; i < (int)pickups.size(); ++i) {
+        const auto& p = pickups[i];
+        ImGui::BulletText("#%d type=%d y=%.1f alive=%d",
+            i, (int)p.type, p.rect.y, (int)p.alive);
     }
 
     ImGui::End();

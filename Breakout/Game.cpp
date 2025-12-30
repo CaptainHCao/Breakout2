@@ -105,13 +105,15 @@ int Game::run()
         bricks.clear();
     }
 
+    // setting up the randomness of upgrades
+    srand((unsigned)SDL_GetTicks());
+
     int currentLevel = 0;
-    std::vector<UpgradePickup> pickups;
     int bricksRemaining = 0;
 
     auto loadLevel = [&](int levelIdx)
         {
-            pickups.clear();
+            m_pickups.clear();
 
             bricks.clear();
             try {
@@ -148,14 +150,14 @@ int Game::run()
 
     bool soundOn = true;
     bool musicOn = true;
-    bool showDebugMenu = true;
+    bool showDebugMenu = false;
 
     Menu menu;
 
     bool running = true;
     uint64_t prevTime = SDL_GetTicks();
 
-    SDL_Log("DEBUG: Entering game loop, initial state = MENU");
+    if (debug) {SDL_Log("DEBUG: Entering game loop, initial state = MENU");};
 
     // ===========================
     //         GAME LOOP
@@ -193,18 +195,19 @@ int Game::run()
             ImGui_ImplSDL3_ProcessEvent(&event);
 
             if (event.type == SDL_EVENT_QUIT) {
-                SDL_Log("DEBUG: SDL_EVENT_QUIT received");
+                if (debug) {SDL_Log("DEBUG: SDL_EVENT_QUIT received");}
+                
                 running = false;
             }
 
             if (event.type == SDL_EVENT_WINDOW_RESIZED) {
                 app.width = event.window.data1;
                 app.height = event.window.data2;
-                SDL_Log("DEBUG: Window resized to %d x %d", app.width, app.height);
+                if (debug) {SDL_Log("DEBUG: Window resized to %d x %d", app.width, app.height);}
             }
 
             if (event.type == SDL_EVENT_KEY_DOWN) {
-                SDL_Log("DEBUG: Key down: scancode=%d", event.key.scancode);
+                if (debug) {SDL_Log("DEBUG: Key down: scancode=%d", event.key.scancode);}
 
                 if (gameState == GameState::Menu) {
                     // keyboard controls for the startup screen
@@ -217,7 +220,7 @@ int Game::run()
                 else if (gameState == GameState::Playing) {
                     // ESC to go back to startup screen
                     if (event.key.key == SDLK_ESCAPE) {
-                        SDL_Log("DEBUG: ESC in Playing -> go back to Menu");
+                        if (debug) {SDL_Log("DEBUG: ESC in Playing -> go back to Menu");}
                         gameState = GameState::Menu;
                     }
                     else if (event.key.key == SDLK_SPACE) {
@@ -225,11 +228,11 @@ int Game::run()
                     }
                     else if (event.key.key == SDLK_M) {
                         musicOn = !musicOn;
-                        SDL_Log("Music toggled %s", musicOn ? "ON" : "OFF");
+                        if (debug) {SDL_Log("Music toggled %s", musicOn ? "ON" : "OFF"); }
                     }
                     else if (event.key.key == SDLK_O) {
                         soundOn = !soundOn;
-                        SDL_Log("Sound toggled %s", soundOn ? "ON" : "OFF");
+                        if (debug) {SDL_Log("Sound toggled %s", soundOn ? "ON" : "OFF"); }
                     }
                     else if (event.key.key == SDLK_F1) { 
                         showDebugMenu = !showDebugMenu; 
@@ -245,7 +248,7 @@ int Game::run()
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        renderDebugMenu(showDebugMenu, paddle, ball);
+        renderDebugMenu(showDebugMenu, paddle, ball, m_pickups);
 
         {
             float scaleX, scaleY;
@@ -284,7 +287,7 @@ int Game::run()
             SDL_FRect paddleRect = paddle.getRect();
 
             // --- update + collect falling upgrades ---
-            for (auto& p : pickups)
+            for (auto& p : m_pickups)
             {
                 if (!p.alive) continue;
 
@@ -320,10 +323,10 @@ int Game::run()
             }
 
             // cleanup dead pickups
-            pickups.erase(
-                std::remove_if(pickups.begin(), pickups.end(),
+            m_pickups.erase(
+                std::remove_if(m_pickups.begin(), m_pickups.end(),
                     [](const UpgradePickup& p) { return !p.alive; }),
-                pickups.end()
+                m_pickups.end()
             );
 
 
@@ -345,7 +348,7 @@ int Game::run()
                         highscore = score;
 					}
                     // out of lives -> go back to menu (and maybe reset)
-                    SDL_Log("DEBUG: no lives left -> back to MENU");
+                    if (debug) {SDL_Log("DEBUG: no lives left -> back to MENU");}
                     gameState = GameState::Menu;
 
                     // simple reset: restore lives & score
@@ -379,7 +382,7 @@ int Game::run()
                                 brick.rect.w * 0.5f,
                                 brick.rect.h * 0.5f
                             };
-                            pickups.push_back(p);
+                            m_pickups.push_back(p);
                         }
 
                         if (soundOn) {
@@ -419,7 +422,7 @@ int Game::run()
 
         if (gameState == GameState::Menu)
         {
-            SDL_Log("DEBUG: Rendering MENU frame");
+            if (debug) {SDL_Log("DEBUG: Rendering MENU frame");}
 
             // Background
             SDL_FRect bgRect{
@@ -443,15 +446,22 @@ int Game::run()
         }
         else if (gameState == GameState::Playing)
         {
+			//--- Draw game elements ---
+            
+            // 1) Bricks
             for (const auto& brick : bricks) {
                 brick.render(app.renderer);
             }
 
-            for (const auto& p : pickups) {
+			// 2) Falling pickups
+            for (const auto& p : m_pickups) {
                 p.render(app.renderer);
             }
 
+            // 3) Paddle render
             paddle.render(app.renderer, app.logicalWidth);
+
+			// 4) Ball render
             if (ballTexture) {
                 SDL_FRect ballRect = ball.getRect();
                 SDL_RenderTexture(app.renderer, ballTexture, nullptr, &ballRect);
@@ -508,11 +518,11 @@ int Game::run()
         if (gameState == GameState::Menu)
         {
             if (quitFromMenu) {
-                SDL_Log("DEBUG: quitFromMenu = true -> exiting");
+                if (debug) { SDL_Log("DEBUG: quitFromMenu = true -> exiting"); }
                 running = false;
             }
             else if (startGame) {
-                SDL_Log("DEBUG: startGame = true -> switch to PLAYING");
+                if (debug) { SDL_Log("DEBUG: startGame = true -> switch to PLAYING"); }
                 gameState = GameState::Playing;
 				// paddle spawns in the middle bottom
                 float startX = (app.logicalWidth - paddle.getRect().w) * 0.5f;

@@ -14,7 +14,7 @@ struct UpgradePickup
 
     void render(SDL_Renderer* r) const
     {
-        // draw a simple filled rect (replace with sprite later)
+        SDL_SetRenderDrawColor(r, 255, 255, 0, 255); // bright yellow
         SDL_RenderFillRect(r, &rect);
     }
 };

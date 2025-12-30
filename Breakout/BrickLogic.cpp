@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cctype>
 #include "UpgradePickup.h"
+#include <cstdlib>
 
 // (same overlaps helper as you already have)
 static bool overlaps(const SDL_FRect& a, const SDL_FRect& b)
@@ -149,6 +150,16 @@ std::vector<Brick> BrickLogic::spawnBricks(
             b.alive = true;
             b.state = 1;
             b.maxState = v;
+
+            // // 20% chance to contain an upgrade
+            b.hasUpgrade = (rand() % 5 == 0);
+
+            if (b.hasUpgrade) {
+                b.upgradeType = static_cast<UpgradeType>(rand() % 4);
+            }
+            else {
+                b.upgradeType = UpgradeType::BiggerPaddle;
+            }
 
             b.rect = SDL_FRect{
                 startX + c * (brickW + padding),

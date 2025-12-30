@@ -7,6 +7,10 @@ to get imgui
 
 git clone https://github.com/libsdl-org/SDL_image.git vendored/SDL_image
 
+
+f1 to activate debug menu
+
+
 # Breakout
 
 High-level modules
