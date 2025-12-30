@@ -22,6 +22,7 @@ public:
     bool soundOn = true;
     bool musicOn = true;
     int  highscore = 0;
+	int currentLevel = 0;
 
     bool startGame = false;
     bool quitFromMenu = false;
@@ -41,6 +42,7 @@ public:
 private:
     MusicPlayer music;          // background music
     SoundEffect brickBreakSfx;  // sound when a brick breaks
+    SoundEffect pickupSfx;      // for unpgrades
 
     std::vector<UpgradePickup> m_pickups;
 

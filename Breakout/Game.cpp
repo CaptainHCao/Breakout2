@@ -51,6 +51,9 @@ int Game::run()
     if (!brickBreakSfx.load("assets/brick_break.wav")) {
         SDL_Log("Brick SFX init failed!");
     }
+    if (!pickupSfx.load("assets/pickup.wav")) {
+        SDL_Log("Pickup SFX init failed!");
+    }
 
     // --- Init ImGui ---
     IMGUI_CHECKVERSION();
@@ -115,6 +118,7 @@ int Game::run()
     srand((unsigned)SDL_GetTicks());
 
     int currentLevel = 0;
+    constexpr int MAX_LEVELS = 4;
     int bricksRemaining = 0;
 
     auto loadLevel = [&](int levelIdx)
@@ -228,6 +232,8 @@ int Game::run()
                     if (event.key.key == SDLK_ESCAPE) {
                         if (debug) {SDL_Log("DEBUG: ESC in Playing -> go back to Menu");}
                         gameState = GameState::Menu;
+                        brickBreakSfx.stop();
+                        pickupSfx.stop();
                     }
                     else if (event.key.key == SDLK_SPACE) {
                         ball.launch();  
@@ -280,14 +286,20 @@ int Game::run()
                 ImGuiWindowFlags_NoFocusOnAppearing |
                 ImGuiWindowFlags_NoNav);
 
-            ImGui::Text("Lives: %d", lives);
-            ImGui::SameLine(300);
-            ImGui::Text("Score: %d", score);
-            ImGui::SameLine(500);
-			ImGui::Text("Highscore: %d", highscore);
+            ImGui::Columns(4, nullptr, false);
+
+            ImGui::Text("Lives: %d", lives);        ImGui::NextColumn();
+            ImGui::Text("Score: %d", score);        ImGui::NextColumn();
+            ImGui::Text("Highscore: %d", highscore); ImGui::NextColumn();
+            ImGui::Text("Level: %d", currentLevel + 1);
+
+            ImGui::Columns(1);
 
             ImGui::End();
             ImGui::PopStyleVar();
+
+            static float brickSfxCooldown = 0.0f;
+            brickSfxCooldown -= deltaTime;
 
             paddle.update(deltaTime, app.logicalWidth);
             SDL_FRect paddleRect = paddle.getRect();
@@ -302,6 +314,9 @@ int Game::run()
                 // collected by paddle
                 if (overlaps(p.rect, paddleRect))
                 {
+                    if (soundOn) {
+                        pickupSfx.play();   
+                    }
                     switch (p.type)
                     {
                     case UpgradeType::BiggerBall:
@@ -313,11 +328,11 @@ int Game::run()
                         break;
 
                     case UpgradeType::BiggerPaddle:
-                        paddle.makeBigger(1.25f);   // add this in Paddle
+                        paddle.makeBigger(1.25f);   
                         break;
 
                     case UpgradeType::FasterPaddle:
-                        paddle.makeFaster(1.20f);   // add this in Paddle
+                        paddle.makeFaster(1.20f);   
                         break;
                     }
 
@@ -356,6 +371,8 @@ int Game::run()
                     // out of lives -> go back to menu (and maybe reset)
                     if (debug) {SDL_Log("DEBUG: no lives left -> back to MENU");}
                     gameState = GameState::Menu;
+                    brickBreakSfx.stop();
+                    pickupSfx.stop();
 
                     // simple reset: restore lives & score
                     lives = 3;
@@ -398,22 +415,23 @@ int Game::run()
                             m_pickups.push_back(p);
                         }
 
-                        if (soundOn) {
+                        if (soundOn && brickSfxCooldown <= 0.0f) {
                             brickBreakSfx.play();
+                            brickSfxCooldown = 0.05f; 
                         }
 
-                        // WIN CHECK ONLY HERE:
                         if (bricksRemaining <= 0) {
                             currentLevel++;
-
-                            // Try load next level. If none, go to Victory.
-                            loadLevel(currentLevel);
-                            if (bricksRemaining <= 0 && bricks.empty()) {
+                            if (currentLevel >= MAX_LEVELS) {
+                                // no more levels → victory
+                                brickBreakSfx.stop();
+                                pickupSfx.stop();
                                 gameState = GameState::Victory;
                                 if (score > highscore) highscore = score;
                             }
-
-                            // We changed state / loaded new bricks; stop processing collisions.
+                            else {
+                                loadLevel(currentLevel);
+                            }
                             break;
                         }
                     }
@@ -517,6 +535,8 @@ int Game::run()
             ImGui::SetCursorPosX((windowWidth - btnSize.x) * 0.5f);
             if (ImGui::Button(btnLabel)) {
                 gameState = GameState::Menu;
+                brickBreakSfx.stop();
+                pickupSfx.stop();
                 lives = 3;
                 score = 0;
                 currentLevel = 0;
@@ -563,11 +583,14 @@ int Game::run()
 	paddle.destroy();
 
     if (bgTexture) SDL_DestroyTexture(bgTexture);
+    if (upgradeTexture) SDL_DestroyTexture(upgradeTexture);
 
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+
     brickBreakSfx.shutdown();
+    pickupSfx.shutdown();
 
     app.shutdown();
     return 0;
