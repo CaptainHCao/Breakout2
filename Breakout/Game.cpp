@@ -65,12 +65,12 @@ int Game::run()
         return 1;
     }
 
+	// --- Load textures ---
     SDL_Texture* bgTexture = IMG_LoadTexture(app.renderer, "assets/dragon.png");
     if (!bgTexture) {
         SDL_Log("Failed to load dragon.png: %s", SDL_GetError());
     }
     SDL_SetTextureScaleMode(bgTexture, SDL_SCALEMODE_NEAREST);
-
 
     SDL_Texture* ballTexture = IMG_LoadTexture(app.renderer, "assets/Ball.png");
     if (!ballTexture) {
@@ -83,6 +83,12 @@ int Game::run()
     if (!brickTexture) {
         SDL_Log("Failed to load brick texture: %s", SDL_GetError());
     }
+
+    SDL_Texture* upgradeTexture = IMG_LoadTexture(app.renderer, "assets/upgrade.png");
+    if (!upgradeTexture) {
+        SDL_Log("Failed to load upgrade.png: %s", SDL_GetError());
+    }
+    SDL_SetTextureScaleMode(upgradeTexture, SDL_SCALEMODE_NEAREST);
 
     //--- Create bricks ---
     const int brickW = 32;
@@ -376,11 +382,18 @@ int Game::run()
                         if (brick.hasUpgrade) {
                             UpgradePickup p;
                             p.type = brick.upgradeType;
+                            p.alive = true;
+                            p.texture = upgradeTexture;
+
+                            // size: use the texture size (or just pick a constant like 16x16)
+                            float tw = 16.0f, th = 16.0f;
+                            if (upgradeTexture) SDL_GetTextureSize(upgradeTexture, &tw, &th);
+
+                            // spawn centered in the brick
                             p.rect = SDL_FRect{
-                                brick.rect.x + brick.rect.w * 0.25f,
-                                brick.rect.y + brick.rect.h * 0.25f,
-                                brick.rect.w * 0.5f,
-                                brick.rect.h * 0.5f
+                                brick.rect.x + (brick.rect.w - tw) * 0.5f,
+                                brick.rect.y + (brick.rect.h - th) * 0.5f,
+                                tw, th
                             };
                             m_pickups.push_back(p);
                         }
