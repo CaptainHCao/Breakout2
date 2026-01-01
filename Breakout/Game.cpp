@@ -87,7 +87,7 @@ int Game::run()
         SDL_Log("Failed to load brick texture: %s", SDL_GetError());
     }
 
-    SDL_Texture* upgradeTexture = IMG_LoadTexture(app.renderer, "assets/upgrade.png");
+    SDL_Texture* upgradeTexture = IMG_LoadTexture(app.renderer, "assets/upgradeOrb.png");
     if (!upgradeTexture) {
         SDL_Log("Failed to load upgrade.png: %s", SDL_GetError());
     }
@@ -399,19 +399,22 @@ int Game::run()
                         if (brick.hasUpgrade) {
                             UpgradePickup p;
                             p.type = brick.upgradeType;
-                            p.alive = true;
                             p.texture = upgradeTexture;
+                            p.alive = true;
 
-                            // size: use the texture size (or just pick a constant like 16x16)
-                            float tw = 16.0f, th = 16.0f;
-                            if (upgradeTexture) SDL_GetTextureSize(upgradeTexture, &tw, &th);
+                            p.initAnimation();
 
-                            // spawn centered in the brick
+                            // size = one frame, not whole texture
+                            float fw = (float)p.frameW;
+                            float fh = (float)p.frameH;
+
                             p.rect = SDL_FRect{
-                                brick.rect.x + (brick.rect.w - tw) * 0.5f,
-                                brick.rect.y + (brick.rect.h - th) * 0.5f,
-                                tw, th
+                                brick.rect.x + (brick.rect.w - fw) * 0.5f,
+                                brick.rect.y + (brick.rect.h - fh) * 0.5f,
+                                fw,
+                                fh
                             };
+
                             m_pickups.push_back(p);
                         }
 
