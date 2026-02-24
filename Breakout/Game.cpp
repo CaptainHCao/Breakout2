@@ -598,7 +598,7 @@ int Game::run()
             const float padding = 10.0f;
 
             ImGui::SetNextWindowPos(
-                ImVec2(app.logicalWidth - padding, padding),
+                ImVec2(app.logicalWidth - padding, 20 + padding),
                 ImGuiCond_Always,
                 ImVec2(1.0f, 0.0f)   // Pivot: top-right
             );
