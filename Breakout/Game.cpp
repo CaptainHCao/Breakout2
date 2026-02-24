@@ -35,6 +35,10 @@ int Game::run()
     int  highscore = 0;
     int lives = 3;
 	int score = 0;
+
+    bool vsyncEnabled = true;
+    SDL_SetRenderVSync(app.renderer, 1);
+
     
     // --- Init SDL/window/renderer ---
     app.width = 1600;
@@ -169,15 +173,28 @@ int Game::run()
 
     if (debug) {SDL_Log("DEBUG: Entering game loop, initial state = MENU");};
 
-    // ===========================
-    //         GAME LOOP
-    // ===========================
+    // FPS counter
+    float fpsTimer = 0.0f;
+    int frameCount = 0;
+    float currentFPS = 0.0f;
+
+    // GAME LOOP
     while (running)
     {
         // --- Time step ---
         const uint64_t nowTime = SDL_GetTicks();
         const float    deltaTime = (nowTime - prevTime) / 1000.0f;
         prevTime = nowTime;
+
+        // FPS calculation
+        frameCount++;
+        fpsTimer += deltaTime;
+
+        if (fpsTimer >= 1.0f) {
+            currentFPS = frameCount / fpsTimer;
+            frameCount = 0;
+            fpsTimer = 0.0f;
+        }
 
         // Per–frame menu actions (set by keyboard and ImGui)
         bool startGame = false;
@@ -260,7 +277,14 @@ int Game::run()
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        renderDebugMenu(showDebugMenu, paddle, ball, m_pickups);
+        renderDebugMenu(
+            showDebugMenu,
+            app.renderer,
+            vsyncEnabled,
+            paddle,
+            ball,
+            m_pickups
+        );
 
         {
             float scaleX, scaleY;
@@ -569,6 +593,33 @@ int Game::run()
             }
         }
 
+        // Render FPS counter
+        {
+            const float padding = 10.0f;
+
+            ImGui::SetNextWindowPos(
+                ImVec2(app.logicalWidth - padding, padding),
+                ImGuiCond_Always,
+                ImVec2(1.0f, 0.0f)   // Pivot: top-right
+            );
+
+            ImGui::SetNextWindowBgAlpha(0.35f);
+
+            ImGui::Begin("FPSCounter",
+                nullptr,
+                ImGuiWindowFlags_NoDecoration |
+                ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoFocusOnAppearing |
+                ImGuiWindowFlags_NoNav |
+                ImGuiWindowFlags_NoMove);
+
+            ImGui::Text("FPS: %.1f", currentFPS);
+
+            ImGui::End();
+        }
+
+
         // --- ImGui + present + music ---
         ImGui::Render();
         ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), app.renderer);
@@ -578,8 +629,8 @@ int Game::run()
 
         SDL_RenderPresent(app.renderer);
 
-        // Simple frame cap (~60 FPS)
-        SDL_Delay(16);
+        // Simple frame cap (~60 FPS) if needed
+        // SDL_Delay(16);
     }
 
     // Cleanup (after the loop)

@@ -3,13 +3,15 @@
 
 void renderDebugMenu(
     bool& showDebugMenu,
+    SDL_Renderer* renderer,   
+    bool& vsyncEnabled,
     Paddle& paddle,
     Ball& ball,
     std::vector<UpgradePickup>& pickups
 ) {
     if (!showDebugMenu) return;
 
-    ImGui::SetNextWindowPos(ImVec2(10, 90), ImGuiCond_Once);
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
     ImGui::SetNextWindowBgAlpha(0.35f);
 
     ImGui::Begin("DEBUG Upgrades", &showDebugMenu,
@@ -55,6 +57,14 @@ void renderDebugMenu(
         const auto& p = pickups[i];
         ImGui::BulletText("#%d type=%d y=%.1f alive=%d",
             i, (int)p.type, p.rect.y, (int)p.alive);
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Rendering");
+
+    if (ImGui::Checkbox("VSync Enabled", &vsyncEnabled))
+    {
+        SDL_SetRenderVSync(renderer, vsyncEnabled ? 1 : 0);
     }
 
     ImGui::End();

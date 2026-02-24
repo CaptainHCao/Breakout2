@@ -31,6 +31,8 @@ bool SDLApp::init(const char* title)
 
     // Create renderer
     renderer = SDL_CreateRenderer(window, nullptr);
+    SDL_SetRenderVSync(renderer, 1);
+
     if (!renderer)
     {
         SDL_ShowSimpleMessageBox(

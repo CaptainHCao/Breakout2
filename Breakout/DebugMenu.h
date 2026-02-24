@@ -9,6 +9,8 @@
 // Returns true if the window is still open.
 void renderDebugMenu(
     bool& showDebugMenu,
+    SDL_Renderer* renderer,
+    bool& vsyncEnabled,
     Paddle& paddle,
     Ball& ball,
     std::vector<UpgradePickup>& pickups
